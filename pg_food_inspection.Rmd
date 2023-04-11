@@ -33,7 +33,10 @@ food_inspection_clean <- food_inspection %>%
     inspection_results == "------"~NA,
     TRUE~inspection_results
   )) %>% 
-  mutate(inspection_date = mdy(gsub(" 0:00", "", inspection_date))) %>% 
+  # Clean time/date data
+  mutate(inspection_date = mdy(gsub(" 0:00", "", inspection_date))) %>%
+  mutate(year = year(inspection_date)) %>%
+  # Clean coordinate data
   mutate(location = gsub("POINT \\(", "", location)) %>% 
   mutate(location = gsub("\\)", "", location)) %>% 
   separate(location, c("latitude", "longitude"), sep = " ", remove = FALSE, convert = TRUE, extra = "drop")
@@ -41,13 +44,17 @@ food_inspection_clean <- food_inspection %>%
 
 
 ```{r}
+# Filter results to those that were bad, since 2018 and associated with campus
 food_inspection_compliance <- food_inspection_clean %>% 
   filter(str_detect(inspection_results, "Non-Compliant|Critical Violations")) %>% 
-  filter(str_detect(name, "UMCP"))
-
+  filter(str_detect(name, "UMCP")) %>% 
+  filter(year >= 2018)
+  
+# Group results to see what campus eateries have the most and if there have been issues with their performance in these evaluations for multiple years
 food_compliance_summary <- food_inspection_compliance %>% 
-  group_by(name) %>% 
-  count()
+  group_by(name, year) %>% 
+  count() %>% 
+  arrange(desc(n))
   
 ```
 
