@@ -1,0 +1,53 @@
+Khushboo Rathore
+DBK Data Desk Application
+2018-2020 Prince George's County Food Inspection Data
+
+```{r}
+# Load Libraries
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(janitor)
+```
+
+```{r}
+# Read Data
+food_inspection <- read_csv("data/food_inspection_2018_2020.csv")
+
+# Clean data to make more legible and add NA values
+food_inspection_clean <- food_inspection %>% 
+  clean_names() %>% 
+  mutate(address_line_2 = case_when(
+    address_line_2 == "------"~NA,
+    TRUE~address_line_2
+  )) %>% 
+  mutate(inspection_type = case_when(
+    inspection_type == "N/A"~NA,
+    TRUE~inspection_type
+  )) %>% 
+  mutate(category = case_when(
+    category == "N/A"~NA,
+    TRUE~category
+  )) %>% 
+  mutate(inspection_results = case_when(
+    inspection_results == "------"~NA,
+    TRUE~inspection_results
+  )) %>% 
+  mutate(inspection_date = mdy(gsub(" 0:00", "", inspection_date))) %>% 
+  mutate(location = gsub("POINT \\(", "", location)) %>% 
+  mutate(location = gsub("\\)", "", location)) %>% 
+  separate(location, c("latitude", "longitude"), sep = " ", remove = FALSE, convert = TRUE, extra = "drop")
+```
+
+
+```{r}
+food_inspection_compliance <- food_inspection_clean %>% 
+  filter(str_detect(inspection_results, "Non-Compliant|Critical Violations")) %>% 
+  filter(str_detect(name, "UMCP"))
+
+food_compliance_summary <- food_inspection_compliance %>% 
+  group_by(name) %>% 
+  count()
+  
+```
+
