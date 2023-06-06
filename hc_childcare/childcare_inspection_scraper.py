@@ -1,5 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
+from pprint import pprint
+import requests_html
 
 url = 'https://www.checkccmd.org/SearchResults.aspx?ft=&fn=&sn=&z=&c=&co='
 response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -26,12 +28,12 @@ print(list_of_rows)
 
 import requests
 from bs4 import BeautifulSoup
-deep_url = 'https://www.checkccmd.org/FacilityDetail.aspx?ft=&fn=&sn=&z=&c=&co=&fi=463466'
-response_deep = requests.get(deep_url, headers={'User-Agent': 'Mozilla/5.0'})
-html_deep = response_deep.content
-print(html_deep)
+from pprint import pprint
+import requests_html as r_html
 
-soup_deep = BeautifulSoup(html_deep, features="html.parser")
-print(soup_deep.prettify())
-table_deep = soup_deep.find(class_= 'detailRow')
-print(table_deep)
+session = r_html.HTMLSession()
+
+deep_url = 'https://www.checkccmd.org/FacilityDetail.aspx?ft=&fn=&sn=&z=&c=&co=&fi=463466'
+response_deep = session.r_html.get(deep_url)
+table_deep = response_deep.r_html.find_all("li")
+pprint(table_deep)
