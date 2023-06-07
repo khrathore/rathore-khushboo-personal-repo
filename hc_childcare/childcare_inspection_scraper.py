@@ -28,14 +28,23 @@ from pprint import pprint
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 driver = webdriver.Chrome()
+wait = WebDriverWait(driver, 10) 
 
-response_deep = driver.get('https://www.checkccmd.org/default.aspx')
-driver.find_element(By.PARTIAL_LINK_TEXT, "view all open providers").click()
-driver.implicitly_wait(5)
+driver.get('https://www.checkccmd.org/default.aspx')
+full_list = driver.find_element(By.PARTIAL_LINK_TEXT, "view all open providers")
+full_list.click()
+element_present = EC.presence_of_element_located((By.PARTIAL_LINK_TEXT , 'A-Level'))
+wait.until(element_present)
+page_source = driver.page_source
 
-soup = BeautifulSoup(driver.page_source, 'lxml')
+soup = BeautifulSoup(page_source, 'html.parser')
+print(soup)
+table = soup.find('tbody')
+print(table.prettify())
 
 list_of_rows = []
 for row in table.find_all('tr'):
