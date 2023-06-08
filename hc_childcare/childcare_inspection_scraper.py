@@ -1,28 +1,3 @@
-import requests
-from bs4 import BeautifulSoup
-from pprint import pprint
-import requests_html
-
-url = 'https://www.checkccmd.org/SearchResults.aspx?ft=&fn=&sn=&z=&c=&co='
-response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
-html = response.content
-# print(html)
-
-soup = BeautifulSoup(html, features="html.parser")
-table = soup.find('tbody')
-# print(table.prettify())
-
-list_of_rows = []
-for row in table.find_all('tr'):
-    list_of_cells = []
-    for cell in row.find_all('td'):
-        list_of_cells.append(text)
-    list_of_rows.append(list_of_cells)
-
-print(list_of_rows)
-
-#cell.text.find('a')['href']
-
 from bs4 import BeautifulSoup
 from pprint import pprint
 from selenium import webdriver
@@ -32,43 +7,52 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 driver = webdriver.Chrome()
-wait = WebDriverWait(driver, 10) 
+wait = WebDriverWait(driver, 10)
 
-driver.get('https://www.checkccmd.org/default.aspx')
-full_list = driver.find_element(By.PARTIAL_LINK_TEXT, "view all open providers")
-full_list.click()
-element_present = EC.presence_of_element_located((By.PARTIAL_LINK_TEXT , 'A-Level'))
-wait.until(element_present)
+# start on the all facilities page
+url = 'https://www.checkccmd.org/SearchResults.aspx?ft=&fn=&sn=&z=&c=&co='
+driver.get(url)
 page_source = driver.page_source
-
 soup = BeautifulSoup(page_source, 'html.parser')
-print(soup)
+
+# get the listings
 table = soup.find('tbody')
-print(table.prettify())
-
 list_of_rows = []
-for row in table.find_all('tr'):
+# skip the first row because it's a header
+for row in table.find_all('tr')[1:]:
     list_of_cells = []
     for cell in row.find_all('td'):
-        list_of_cells.append(cell.text)
+        if cell.find('a'):
+                list_of_cells.append(cell.text.strip())
+                list_of_cells.append('https://www.checkccmd.org/'+cell.find('a')['href'])
+                detail_page = 'https://www.checkccmd.org/'+cell.find('a')['href']
+        elif cell.text.strip() != '':
+            list_of_cells.append(cell.text.strip())
+        driver.find_element(By.XPATH, )
     list_of_rows.append(list_of_cells)
 
-print(table.prettify())
 
-list_of_rows = []
-for row in table.find_all('tr'):
-    list_of_cells = []
-    for cell in row.find_all('td'):
-        text = cell.text.strip()
-        list_of_cells.append(text)
-    list_of_rows.append(list_of_cells)
+for index, page in enumerate(range(2,501)):
+    print(page)
+    if page == 8:
+        next_page = driver.find_element(By.LINK_TEXT, '...').click()
+    elif page % 7 == 1:
+        next_page = driver.find_elements(By.LINK_TEXT, '...')[1].click()
+    else:
+        next_page = driver.find_element(By.LINK_TEXT, str(page)).click()
+    page_source = driver.page_source
+    soup = BeautifulSoup(page_source, 'html.parser')
+    table = soup.find('tbody')
+    for row in table.find_all('tr')[1:]:
+        list_of_cells = []
+        for cell in row.find_all('td'):
+            if cell.find('a'):
+                list_of_cells.append(cell.text.strip())
+                list_of_cells.append('https://www.checkccmd.org/'+cell.find('a')['href'])
+                driver.execute_script('''window.open("https://www.checkccmd.org/'+cell.find('a')['href']", "_blank");''')
+            elif cell.text.strip() != '':
+                list_of_cells.append(cell.text.strip())
+        list_of_rows.append(list_of_cells)
 
-print(list_of_rows)
+pprint(list_of_rows)
 
-#print(response_deep)
-html_deep = response_deep.html.find('li', first=True)
-pprint(html_deep.text)
-
-soup_deep = BeautifulSoup(html_deep, features="html.parser")
-table_deep = soup_deep.find_all("li")
-pprint(table_deep)
