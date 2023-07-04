@@ -53,7 +53,6 @@ for index, page in enumerate(range(1,2)):
             if cell.text.strip() != '':
                 list_of_cells.append(cell.text.strip())
         list_of_rows.append(list_of_cells)
-    print(driver.current_url)
 
 pprint(list_of_rows)
 
