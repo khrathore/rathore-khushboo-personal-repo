@@ -5,6 +5,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import re
 
 driver = webdriver.Chrome()
 wait = WebDriverWait(driver, 10)
@@ -46,13 +47,17 @@ for index, page in enumerate(range(1,2)):
     facilities[1].click()
     page_source = driver.page_source
     soup = BeautifulSoup(page_source, 'html.parser')
-    detail_lists = (soup.find('ul'))[1:2]
-    for row in table.find_all('li')[1:]:
-        list_of_cells = []
-        for cell in row.find_all('MainContent_txt'):
-            if cell.text.strip() != '':
-                list_of_cells.append(cell.text.strip())
-        list_of_rows.append(list_of_cells)
+    detail_lists = (soup.find_all('ul'))[1:2]
+    # get the information for each place
+    element_value = re.compile('MainContent_txt')
+    for entry in detail_lists:
+        dict_facility = {}
+        if entry.contains('labelForm'):
+            key = entry.text.strip()
+        elif entry.contains(element_value):
+            value = entry.text.strip()
+            list_of_cells.append(cell.text.strip())
+        detail_rows.append(list_of_cells)
 
 pprint(list_of_rows)
 
