@@ -1,11 +1,8 @@
-from bs4 import BeautifulSoup
 from pprint import pprint
+from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import re
 
 driver = webdriver.Chrome()
 wait = WebDriverWait(driver, 10)
@@ -19,8 +16,8 @@ soup = BeautifulSoup(page_source, 'html.parser')
 #Scrape, then click on each link and collect details, then hit back button and go to next
 
 list_of_rows = []
-detail_rows = [] 
-for index, page in enumerate(range(1,2)):
+detail_rows = []
+for page in enumerate(range(1,2)):
     if page == 8:
         next_page = driver.find_element(By.LINK_TEXT, '...').click()
     elif page == 1:
@@ -51,7 +48,7 @@ for index, page in enumerate(range(1,2)):
         detail_lists = (soup.find_all('ul'))[0:2]
         # get the information for each place
         for columns in detail_lists:
-            entries = columns.find_all('li')      
+            entries = columns.find_all('li')
             for entry in entries:
                 #entry = entries[0]
                 if entry.find(class_='Excelslogo'):
@@ -66,7 +63,6 @@ for index, page in enumerate(range(1,2)):
                     next
         detail_rows.append(dict_facility)
         soup.find(id_="MainContent_LinkBack").click()
-        
 
 pprint(list_of_rows)
 print(detail_rows)
