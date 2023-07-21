@@ -1,8 +1,11 @@
-from pprint import pprint
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from pprint import pprint
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import re
 
 driver = webdriver.Chrome()
 wait = WebDriverWait(driver, 10)
@@ -13,11 +16,11 @@ driver.get(url)
 page_source = driver.page_source
 soup = BeautifulSoup(page_source, 'html.parser')
 
-#Scrape, then click on each link and collect details, then hit back button and go to next
 
+#Scrape, then click on each link and collect details, then hit back button and go to next
 list_of_rows = []
-detail_rows = []
-for page in enumerate(range(1,2)):
+detail_rows = [] 
+for index, page in enumerate(range(1,2)):
     if page == 8:
         next_page = driver.find_element(By.LINK_TEXT, '...').click()
     elif page == 1:
@@ -41,16 +44,16 @@ for page in enumerate(range(1,2)):
     a_tags = driver.find_elements(By.TAG_NAME, "a")
     facilities = [x for x in a_tags if "FacilityDetail" in x.get_attribute('href')]
     for facility in facilities:
+        wait
         facility.click()
+        print("new facility")
         dict_facility = {}
         page_source = driver.page_source
         soup = BeautifulSoup(page_source, 'html.parser')
-        detail_lists = (soup.find_all('ul'))[0:2]
-        # get the information for each place
+        detail_lists = soup.find_all('ul')[0:2]
         for columns in detail_lists:
             entries = columns.find_all('li')
             for entry in entries:
-                #entry = entries[0]
                 if entry.find(class_='Excelslogo'):
                     key = "Maryland Excels Level"
                     value = entry.find(class_ = "detailLevelText").text.strip()
@@ -62,7 +65,9 @@ for page in enumerate(range(1,2)):
                 else:
                     next
         detail_rows.append(dict_facility)
-        soup.find(id_="MainContent_LinkBack").click()
+        link = driver.find_element(By.ID, 'MainContent_LinkBack')
+        link.click()
+        
+        
 
 pprint(list_of_rows)
-print(detail_rows)
