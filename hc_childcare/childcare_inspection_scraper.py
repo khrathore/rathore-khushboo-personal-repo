@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import re
 
 driver = webdriver.Chrome()
-wait = WebDriverWait(driver, 10)
+wait = WebDriverWait(driver, 60)
 
 # start on the all facilities page
 url = 'https://www.checkccmd.org/SearchResults.aspx?ft=&fn=&sn=&z=&c=&co='
@@ -32,6 +32,7 @@ for index, page in enumerate(range(1,2)):
     page_source = driver.page_source
     soup = BeautifulSoup(page_source, 'html.parser')
     table = soup.find('tbody')
+    num_rows = 0
     for row in table.find_all('tr')[1:]:
         list_of_cells = []
         for cell in row.find_all('td'):
@@ -41,10 +42,20 @@ for index, page in enumerate(range(1,2)):
             elif cell.text.strip() != '':
                 list_of_cells.append(cell.text.strip())
         list_of_rows.append(list_of_cells)
-    a_tags = driver.find_elements(By.TAG_NAME, "a")
-    facilities = [x for x in a_tags if "FacilityDetail" in x.get_attribute('href')]
-    for facility in facilities:
+        num_rows = num_rows + 1
+        #print(num_rows)
+    n = 0
+    # While n is less than the number of rows on the page:
+    # generate atags
+    # get the facility href
+    # click, process, click back
+    # go back to top of loop
+    while n < num_rows:
         wait
+        a_tags = driver.find_elements(By.TAG_NAME, "a")
+        facility = [x for x in a_tags if "FacilityDetail" in x.get_attribute('href')][n]
+        print(facility)
+        #print(len(facilities))
         facility.click()
         print("new facility")
         dict_facility = {}
@@ -59,14 +70,20 @@ for index, page in enumerate(range(1,2)):
                     value = entry.find(class_ = "detailLevelText").text.strip()
                     dict_facility[key] = value
                 elif entry.text.strip() != '':
-                    key = entry.find(class_='labelForm').text.strip()
-                    value = entry.find(class_='detailText').text.strip()
+                    try:
+                        key = entry.find(class_='labelForm').text.strip()
+                        value = entry.find(class_='detailText').text.strip()
+                    except AttributeError:
+                        key = "none"
+                        value = "none"
                     dict_facility[key] = value
                 else:
                     next
         detail_rows.append(dict_facility)
         link = driver.find_element(By.ID, 'MainContent_LinkBack')
         link.click()
+        n = n + 1
+        print(n)
         
         
 
