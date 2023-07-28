@@ -20,7 +20,7 @@ soup = BeautifulSoup(page_source, 'html.parser')
 #Scrape, then click on each link and collect details, then hit back button and go to next
 list_of_rows = []
 detail_rows = [] 
-for index, page in enumerate(range(1,2)):
+for index, page in enumerate(range(1,496)):
     if page == 8:
         next_page = driver.find_element(By.LINK_TEXT, '...').click()
     elif page == 1:
@@ -88,3 +88,6 @@ for index, page in enumerate(range(1,2)):
         
 
 pprint(list_of_rows)
+print(detail_rows)
+
+
