@@ -21,7 +21,7 @@ soup = BeautifulSoup(page_source, 'html.parser')
 list_of_rows = []
 detail_rows = []
 
-for index, page in enumerate(range(1,8)):
+for page in enumerate(range(1,8)):
     if page == 8:
         next_page = driver.find_element(By.LINK_TEXT, '...').click()
     elif page == 1:
@@ -45,7 +45,7 @@ for index, page in enumerate(range(1,8)):
                 elif cell.text.strip() != '':
                     list_of_cells.append(cell.text.strip())
             list_of_rows.append(list_of_cells)
-            #bline_writer.writerow(list_of_cells)
+            bline_writer.writerow(list_of_cells)
             num_rows = num_rows + 1
     n = 0
     # While n is less than the number of rows on the page:
@@ -88,9 +88,10 @@ for index, page in enumerate(range(1,8)):
             #dict_writer.writeheader()  # Write the header row (optional)
             dict_writer.writerow(dict_facility)
             detail_rows.append(dict_facility)
-        link = driver.find_element(By.ID, 'MainContent_LinkBack')
-        link.click()
+        #link = driver.find_element(By.ID, 'MainContent_LinkBack')
+        #link.click()
         n = n + 1
+        driver.back()
         
         
 
