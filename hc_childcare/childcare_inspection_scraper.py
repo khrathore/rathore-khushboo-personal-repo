@@ -21,7 +21,7 @@ soup = BeautifulSoup(page_source, 'html.parser')
 list_of_rows = []
 detail_rows = []
 
-for page in enumerate(range(1,8)):
+for page in enumerate(range(1,496)):
     if page == 8:
         next_page = driver.find_element(By.LINK_TEXT, '...').click()
     elif page == 1:
