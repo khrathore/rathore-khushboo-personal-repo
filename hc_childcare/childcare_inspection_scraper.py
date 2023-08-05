@@ -19,7 +19,12 @@ soup = BeautifulSoup(page_source, 'html.parser')
 
 #Scrape, then click on each link and collect details, then hit back button and go to next
 list_of_rows = []
+cc_header = ["provider_name, facility_name, address, county, school_name, program_type"]
+with open ('checkcc_basic.csv', mode='a', newline = "") as basiccsv:
+    bline_writer = csv.writer(basiccsv)
+    bline_writer.writerow(cc_header)
 detail_rows = []
+inspection_rows = []
 
 for index, page in enumerate(range(1,496)):
     if page == 8:
@@ -44,6 +49,8 @@ for index, page in enumerate(range(1,496)):
                     list_of_cells.append('https://www.checkccmd.org/'+cell.find('a')['href'])
                 elif cell.text.strip() != '':
                     list_of_cells.append(cell.text.strip())
+                elif cell.text.strip() == '':
+                    list_of_cells.append("NA")
             list_of_rows.append(list_of_cells)
             bline_writer.writerow(list_of_cells)
             num_rows = num_rows + 1
@@ -88,8 +95,26 @@ for index, page in enumerate(range(1,496)):
             #dict_writer.writeheader()  # Write the header row (optional)
             dict_writer.writerow(dict_facility)
             detail_rows.append(dict_facility)
-        #link = driver.find_element(By.ID, 'MainContent_LinkBack')
-        #link.click()
+        '''with open ("checkcc_inspections.csv", 'a', newline = '') as pdfinfo:
+            iline_writer = csv.writer(pdfinfo)
+            list_of_cells = []
+            try:
+                soup.find_all('tbody')[1]
+                list_of_cells = []
+                for row in table.find_all('tr')[1:]:
+                    for cell in row.find_all('td'):
+                        if cell.find('a'):
+                            list_of_cells.append(cell.text.strip())
+                            list_of_cells.append('https://www.checkccmd.org/'+cell.find('a')['href'])
+                        elif cell.text.strip() != '':
+                            list_of_cells.append(cell.text.strip())
+                        elif cell.text.strip() == '':
+                            list_of_cells.append("NA")
+                list_of_rows.append(list_of_cells)
+            except IndexError:
+                list_of_cells = list_of_cells
+            inspection_rows.append(list_of_cells)
+            iline_writer.writerow(list_of_cells)'''    
         n = n + 1
         driver.back()
         
