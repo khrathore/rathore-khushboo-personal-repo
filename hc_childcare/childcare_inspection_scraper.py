@@ -17,7 +17,6 @@ page_source = driver.page_source
 soup = BeautifulSoup(page_source, 'html.parser')
 
 
-#Scrape, then click on each link and collect details, then hit back button and go to next
 list_of_rows = []
 cc_header = ["provider_name, facility_name, address, county, school_name, program_type"]
 with open ('checkcc_basic.csv', mode='a', newline = "") as basiccsv:
@@ -26,15 +25,28 @@ with open ('checkcc_basic.csv', mode='a', newline = "") as basiccsv:
 detail_rows = []
 inspection_rows = []
 
-for index, page in enumerate(range(1,496)):
-    if page == 8:
-        next_page = driver.find_element(By.LINK_TEXT, '...').click()
-    elif page == 1:
-        page = 1
-    elif page % 7 == 1:
-        next_page = driver.find_elements(By.LINK_TEXT, '...')[1].click()
-    else:
-        next_page = driver.find_element(By.LINK_TEXT, str(page)).click()
+last_page = 0
+
+for index, page in enumerate(range(1,495)):
+    if (page < last_page):
+        if page == 8:
+            next_page = driver.find_element(By.LINK_TEXT, '...').click()
+        elif page == 1:
+            page = 1
+        elif page % 7 == 1:
+            next_page = driver.find_elements(By.LINK_TEXT, '...')[1].click()
+        else:
+            next_page = driver.find_element(By.LINK_TEXT, str(page)).click()
+        continue
+    else: 
+        if page == 8:
+            next_page = driver.find_element(By.LINK_TEXT, '...').click()
+        elif page == 1:
+            page = 1
+        elif page % 7 == 1:
+            next_page = driver.find_elements(By.LINK_TEXT, '...')[1].click()
+        else:
+            next_page = driver.find_element(By.LINK_TEXT, str(page)).click()
     page_source = driver.page_source
     soup = BeautifulSoup(page_source, 'html.parser')
     table = soup.find('tbody')
@@ -92,7 +104,7 @@ for index, page in enumerate(range(1,496)):
                         next
             fieldnames = dict_facility.keys()
             dict_writer = csv.DictWriter(complexcsv, fieldnames=fieldnames)
-            #dict_writer.writeheader()  # Write the header row (optional)
+            dict_writer.writeheader()  # Write the header row (optional)
             dict_writer.writerow(dict_facility)
             detail_rows.append(dict_facility)
         '''with open ("checkcc_inspections.csv", 'a', newline = '') as pdfinfo:
@@ -117,6 +129,13 @@ for index, page in enumerate(range(1,496)):
             iline_writer.writerow(list_of_cells)'''    
         n = n + 1
         driver.back()
+    if page == last_page:
+        driver.quit()
+        driver = webdriver.Chrome()
+        driver.get(url)
+        page_source = driver.page_source
+        soup = BeautifulSoup(page_source, 'html.parser')
+        last_page = last_page + 100
         
         
 
