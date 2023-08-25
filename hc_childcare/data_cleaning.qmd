@@ -1,0 +1,27 @@
+
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+```
+
+```{r}
+
+cc_details <- read_csv("distinct_details.csv")
+
+cc_details_clean <- cc_details
+
+summarize(cc_details_clean)
+
+row_index <- 2
+for(row in 1:nrow(cc_details_clean)){
+  if (cc_details_clean[row][row_index]
+  
+}
+
+
+
+
+```
+
