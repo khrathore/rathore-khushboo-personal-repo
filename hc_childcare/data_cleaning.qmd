@@ -1,27 +1,32 @@
 
 
 ```{r}
+install.packages("tidyverse")
+
 library(tidyverse)
-library(dplyr)
-library(lubridate)
 ```
 
 ```{r}
 
 cc_details <- read_csv("distinct_details.csv")
 
-cc_details_clean <- cc_details
+cc_details_clean <- cc_details %>% 
+  mutate(serious_injuries = as.character(serious_injuries)) %>% 
+  mutate(fatalities = as.character(fatalities)) %>% 
+  mutate(level = as.character(level))
 
-summarize(cc_details_clean)
-
-row_index <- 2
-for(row in 1:nrow(cc_details_clean)){
-  if (cc_details_clean[row][row_index]
-  
+for(row in 1:nrow(cc_details_clean)) {
+  if (is.na(cc_details_clean$facility_name[row])) {
+  }
+  else if (str_detect(cc_details_clean$facility_name[row], "[0-9]+")) {
+    row_values <- cc_details_clean[row, ]
+    shifted_values <- c(row_values[1], NA, row_values[-c(1, length(row_values))])
+    cc_details_clean[row, ] <- shifted_values
+  }
 }
 
-
-
+cc_details_standardized <- cc_details_clean %>% 
+  
 
 ```
 
