@@ -8,6 +8,8 @@ library(tidyverse)
 
 ```{r}
 
+capacity_pattern <- "(?<=\\d)(?=(?:\\s*\\d+\\s*(?:weeks|months|years)\\b))"
+
 cc_details <- read_csv("distinct_details.csv")
 
 cc_details_clean <- cc_details %>% 
@@ -18,7 +20,7 @@ cc_details_clean <- cc_details %>%
 for(row in 1:nrow(cc_details_clean)) {
   if (is.na(cc_details_clean$facility_name[row])) {
   }
-  else if (str_detect(cc_details_clean$facility_name[row], "[0-9]+")) {
+  else if (str_detect(cc_details_clean$facility_name[row], "^[0-9]{5}")) {
     row_values <- cc_details_clean[row, ]
     shifted_values <- c(row_values[1], NA, row_values[-c(1, length(row_values))])
     cc_details_clean[row, ] <- shifted_values
@@ -26,6 +28,13 @@ for(row in 1:nrow(cc_details_clean)) {
 }
 
 cc_details_standardized <- cc_details_clean %>% 
+  mutate(fatalities = case_when(
+    str_detect(fatalities, "none") ~ "0",
+    TRUE ~ fatalities
+  )) %>% 
+  mutate(capacity = case_when(
+    str_detect(capacity, "weeks") ~ gsub(capacity_pattern, " ", capacity, perl = TRUE)
+  ))
   
 
 ```

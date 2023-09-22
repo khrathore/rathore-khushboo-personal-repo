@@ -27,7 +27,7 @@ inspection_rows = []
 
 last_page = 0
 
-for index, page in enumerate(range(1,495)):
+for index, page in enumerate(range(1,2)):
     if (page < last_page):
         if page == 8:
             next_page = driver.find_element(By.LINK_TEXT, '...').click()
@@ -107,13 +107,13 @@ for index, page in enumerate(range(1,495)):
             dict_writer.writeheader()  # Write the header row (optional)
             dict_writer.writerow(dict_facility)
             detail_rows.append(dict_facility)
-        '''with open ("checkcc_inspections.csv", 'a', newline = '') as pdfinfo:
+        with open ("checkcc_inspections.csv", 'a', newline = '') as pdfinfo:
             iline_writer = csv.writer(pdfinfo)
-            list_of_cells = []
+            
             try:
-                soup.find_all('tbody')[1]
-                list_of_cells = []
+                table = soup.find_all('tbody')[0]
                 for row in table.find_all('tr')[1:]:
+                    list_of_cells = []
                     for cell in row.find_all('td'):
                         if cell.find('a'):
                             list_of_cells.append(cell.text.strip())
@@ -122,11 +122,9 @@ for index, page in enumerate(range(1,495)):
                             list_of_cells.append(cell.text.strip())
                         elif cell.text.strip() == '':
                             list_of_cells.append("NA")
-                list_of_rows.append(list_of_cells)
+                    iline_writer.writerow(list_of_cells)
             except IndexError:
-                list_of_cells = list_of_cells
-            inspection_rows.append(list_of_cells)
-            iline_writer.writerow(list_of_cells)'''    
+                print(dict_facility[key]) 
         n = n + 1
         driver.back()
     if page == last_page:
@@ -139,7 +137,7 @@ for index, page in enumerate(range(1,495)):
         
         
 
-pprint(list_of_rows)
-print(detail_rows)
+#pprint(list_of_rows)
+#print(detail_rows)
 
 
