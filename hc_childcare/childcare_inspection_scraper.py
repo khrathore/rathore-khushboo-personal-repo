@@ -27,7 +27,7 @@ inspection_rows = []
 
 last_page = 0
 
-for index, page in enumerate(range(1,2)):
+for index, page in enumerate(range(1,491)):
     if (page < last_page):
         if page == 8:
             next_page = driver.find_element(By.LINK_TEXT, '...').click()
