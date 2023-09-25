@@ -1,0 +1,25 @@
+
+
+```{r}
+install.packages("tidyverse")
+install.packages("httr")
+install.packages("jsonlite")
+
+library(tidyverse)
+library(httr)
+library(jsonlite)
+```
+
+```{r}
+active_registrants_url <- "https://efile.fara.gov/api/v1/Registrants/json/Active"
+
+active_reg <- fromJSON(txt=active_registrants_url)
+df_active_registrants <- active_reg$REGISTRANTS_ACTIVE$ROW
+
+terminated_registrants_url <- "https://efile.fara.gov/api/v1/Registrants/json/Terminated"
+
+terminated_reg <- fromJSON(txt=terminated_registrants_url)
+df_terminated_registrants <- terminated_reg$REGISTRANTS_TERMINATED$ROW
+
+```
+
