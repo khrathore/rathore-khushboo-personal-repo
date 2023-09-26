@@ -1,25 +1,55 @@
 
 
 ```{r}
-install.packages("tidyverse")
-install.packages("httr")
-install.packages("jsonlite")
+#install.packages("tidyverse")
+#install.packages("httr")
+#install.packages("jsonlite")
 
 library(tidyverse)
 library(httr)
 library(jsonlite)
+library(janitor)
 ```
+
+```{r}
+registrant_pdfs <- function(registrant) {
+
+}
+
+pdf_urls <- function(registrant) {
+  registration_number <- all_registrants$registration_number[registrant]
+  url <- paste0("https://efile.fara.gov/api/v1/RegDocs/json/", registration_number)
+  Sys.sleep(2)
+  print(registrant)
+  documents <- fromJSON(txt = url)
+  pdf_dataframe <- documents$REGISTRANTDOCS$ROW
+}
+
+```
+
 
 ```{r}
 active_registrants_url <- "https://efile.fara.gov/api/v1/Registrants/json/Active"
 
-active_reg <- fromJSON(txt=active_registrants_url)
-df_active_registrants <- active_reg$REGISTRANTS_ACTIVE$ROW
+active_reg <- fromJSON(txt = active_registrants_url)
+df_active_registrants <- active_reg$REGISTRANTS_ACTIVE$ROW %>% 
+  clean_names() %>% 
+  select(address_1, address_2, registration_date, city, registration_number, name, zip, state, business_name)
 
 terminated_registrants_url <- "https://efile.fara.gov/api/v1/Registrants/json/Terminated"
 
-terminated_reg <- fromJSON(txt=terminated_registrants_url)
-df_terminated_registrants <- terminated_reg$REGISTRANTS_TERMINATED$ROW
+terminated_reg <- fromJSON(txt = terminated_registrants_url)
+df_terminated_registrants <- terminated_reg$REGISTRANTS_TERMINATED$ROW %>% 
+  clean_names()
+
+term_registrants <- df_terminated_registrants %>% 
+  select(-termination_date)
+
+all_registrants <- term_registrants %>% 
+  rbind(df_active_registrants) %>% 
+  distinct(registration_number, .keep_all = TRUE)
+
+all_pdf_urls <- map_dfr(c(1:nrow(all_registrants)), pdf_urls)
 
 ```
 
