@@ -12,17 +12,16 @@ library(janitor)
 ```
 
 ```{r}
-registrant_pdfs <- function(registrant) {
 
-}
+registrant <- 219
 
 pdf_urls <- function(registrant) {
   registration_number <- all_registrants$registration_number[registrant]
   url <- paste0("https://efile.fara.gov/api/v1/RegDocs/json/", registration_number)
   Sys.sleep(2)
-  print(registrant)
   documents <- fromJSON(txt = url)
   pdf_dataframe <- documents$REGISTRANTDOCS$ROW
+  print(registration_number)
 }
 
 ```
