@@ -10,7 +10,7 @@ library(tidyverse)
 
 capacity_pattern <- "(?<=\\d)(?=(?:\\s*\\d+\\s*(?:weeks|months|years)\\b))"
 
-cc_details <- read_csv("distinct_details.csv")
+cc_details <- read_csv("distinct_details_Aug23.csv")
 
 cc_details_clean <- cc_details %>% 
   mutate(serious_injuries = as.character(serious_injuries)) %>% 
@@ -32,9 +32,15 @@ cc_details_standardized <- cc_details_clean %>%
     str_detect(fatalities, "none") ~ "0",
     TRUE ~ fatalities
   )) %>% 
-  mutate(capacity = case_when(
-    str_detect(capacity, "weeks") ~ gsub(capacity_pattern, " ", capacity, perl = TRUE)
+  mutate(approved_for = case_when(
+    
   ))
+
+
+#%>% 
+  #mutate(capacity = case_when(
+  #  str_detect(capacity, "weeks") ~ gsub(capacity_pattern, " ", capacity, perl = TRUE)
+  #))
   
 
 ```

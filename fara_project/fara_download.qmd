@@ -4,11 +4,13 @@
 #install.packages("tidyverse")
 #install.packages("httr")
 #install.packages("jsonlite")
+#install.packages("rjson")
 
 library(tidyverse)
 library(httr)
 library(jsonlite)
 library(janitor)
+library(rjson)
 ```
 
 ```{r}
@@ -19,9 +21,23 @@ pdf_urls <- function(registrant) {
   registration_number <- all_registrants$registration_number[registrant]
   url <- paste0("https://efile.fara.gov/api/v1/RegDocs/json/", registration_number)
   Sys.sleep(2)
-  documents <- fromJSON(txt = url)
+  documents <- fromJSON(file=url)
   pdf_dataframe <- documents$REGISTRANTDOCS$ROW
   print(registration_number)
+}
+
+number <- 1
+active_list_df <- function(number) {
+  registrant <- active_reg_list[[number]]
+  registrant_name <- registrant$Name
+  zip_code <- registrant$Zip
+  address_line_one <- registrant$Address_1
+  address_line_two <- registrant$Address_2
+  city <- registrant$City
+  state_abbr <- registrant$State
+  registration_date <- as.Date(registrant$Registration_Date, "%m/%d/%Y")
+  registrant_number <- registrant$Registration_Number
+  registrant_data <- c(registrant_name, zip_code, address_line_one, address_line_two, city, state_abbr, registration_date)
 }
 
 ```
@@ -30,15 +46,17 @@ pdf_urls <- function(registrant) {
 ```{r}
 active_registrants_url <- "https://efile.fara.gov/api/v1/Registrants/json/Active"
 
-active_reg <- fromJSON(txt = active_registrants_url)
-df_active_registrants <- active_reg$REGISTRANTS_ACTIVE$ROW %>% 
+active_reg <- fromJSON(file = active_registrants_url)
+active_reg_list <- active_reg$REGISTRANTS_ACTIVE$ROW 
+df_active_registrants <-
   clean_names() %>% 
   select(address_1, address_2, registration_date, city, registration_number, name, zip, state, business_name)
 
 terminated_registrants_url <- "https://efile.fara.gov/api/v1/Registrants/json/Terminated"
 
-terminated_reg <- fromJSON(txt = terminated_registrants_url)
+terminated_reg <- fromJSON(file =  terminated_registrants_url)
 df_terminated_registrants <- terminated_reg$REGISTRANTS_TERMINATED$ROW %>% 
+  
   clean_names()
 
 term_registrants <- df_terminated_registrants %>% 
