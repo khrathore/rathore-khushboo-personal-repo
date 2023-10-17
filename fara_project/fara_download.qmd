@@ -3,70 +3,63 @@
 ```{r}
 #install.packages("tidyverse")
 #install.packages("httr")
-#install.packages("jsonlite")
-#install.packages("rjson")
 
 library(tidyverse)
 library(httr)
-library(jsonlite)
 library(janitor)
-library(rjson)
+
+options(readr.show_col_types = FALSE)
 ```
 
 ```{r}
-
-registrant <- 219
 
 pdf_urls <- function(registrant) {
   registration_number <- all_registrants$registration_number[registrant]
-  url <- paste0("https://efile.fara.gov/api/v1/RegDocs/json/", registration_number)
-  Sys.sleep(2)
-  documents <- fromJSON(file=url)
-  pdf_dataframe <- documents$REGISTRANTDOCS$ROW
-  print(registration_number)
-}
-
-number <- 1
-active_list_df <- function(number) {
-  registrant <- active_reg_list[[number]]
-  registrant_name <- registrant$Name
-  zip_code <- registrant$Zip
-  address_line_one <- registrant$Address_1
-  address_line_two <- registrant$Address_2
-  city <- registrant$City
-  state_abbr <- registrant$State
-  registration_date <- as.Date(registrant$Registration_Date, "%m/%d/%Y")
-  registrant_number <- registrant$Registration_Number
-  registrant_data <- c(registrant_name, zip_code, address_line_one, address_line_two, city, state_abbr, registration_date)
+  url <- paste0("https://efile.fara.gov/api/v1/RegDocs/csv/", registration_number)
+  Sys.sleep(5)
+  documents <- read_csv(url)
+  print(registrant)
+  documents
 }
 
 ```
-
 
 ```{r}
-active_registrants_url <- "https://efile.fara.gov/api/v1/Registrants/json/Active"
+active_registrants_url <- "https://efile.fara.gov/api/v1/Registrants/csv/Active"
 
-active_reg <- fromJSON(file = active_registrants_url)
-active_reg_list <- active_reg$REGISTRANTS_ACTIVE$ROW 
-df_active_registrants <-
-  clean_names() %>% 
-  select(address_1, address_2, registration_date, city, registration_number, name, zip, state, business_name)
-
-terminated_registrants_url <- "https://efile.fara.gov/api/v1/Registrants/json/Terminated"
-
-terminated_reg <- fromJSON(file =  terminated_registrants_url)
-df_terminated_registrants <- terminated_reg$REGISTRANTS_TERMINATED$ROW %>% 
-  
+active_reg <- read_csv(active_registrants_url) %>% 
   clean_names()
 
-term_registrants <- df_terminated_registrants %>% 
+terminated_registrants_url <- "https://efile.fara.gov/api/v1/Registrants/csv/Terminated"
+
+terminated_reg <- read_csv(terminated_registrants_url) %>% 
+  clean_names()
+
+terminated_clean <- terminated_reg %>% 
   select(-termination_date)
 
-all_registrants <- term_registrants %>% 
-  rbind(df_active_registrants) %>% 
+all_registrants <- terminated_clean %>% 
+  rbind(active_reg) %>% 
   distinct(registration_number, .keep_all = TRUE)
 
-all_pdf_urls <- map_dfr(c(1:nrow(all_registrants)), pdf_urls)
-
-```
+all_pdf_urls_1 <- map_dfr(c(1:650), pdf_urls)
+Sys.sleep(2)
+all_pdf_urls_2 <- map_dfr(c(651:1300), pdf_urls)
+Sys.sleep(2)
+all_pdf_urls_3 <- map_dfr(c(1301:1950), pdf_urls)
+Sys.sleep(2)
+all_pdf_urls_4 <- map_dfr(c(1951:2600), pdf_urls)
+Sys.sleep(2)
+all_pdf_urls_5 <- map_dfr(c(2601:3250), pdf_urls)
+Sys.sleep(2)
+all_pdf_urls_6 <- map_dfr(c(3251:3900), pdf_urls)
+Sys.sleep(2)
+all_pdf_urls_7 <- map_dfr(c(3901:4550), pdf_urls)
+Sys.sleep(2)
+all_pdf_urls_8 <- map_dfr(c(4551:5200), pdf_urls)
+Sys.sleep(2)
+all_pdf_urls_9 <- map_dfr(c(5201:5850), pdf_urls)
+Sys.sleep(2)
+all_pdf_urls_10 <- map_dfr(c(5851:nrow(all_registrants)), pdf_urls)
+l```
 
