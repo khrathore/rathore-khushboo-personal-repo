@@ -16,6 +16,7 @@ library(httr)
 # Function to convert xml listings into rows of dataframes. Run this before running the codeblock below.
 
 ```{r}
+
 #JUST for second XML, which has some different factors
 xml_two_to_table <- function(file_number) {
   xml_listing <- all_listings[[file_number]]
@@ -140,7 +141,7 @@ xml_one_to_table <- function(file_number) {
 
 ```{r}
 # Example URL for the oldest available snapshot
-wayback_urls <- c("https://web.archive.org/web/20080131052758/http://soprweb.senate.gov/giftrule/giftruledownload/GiftRuleData.zip", "https://web.archive.org/web/20110605144411/http://soprweb.senate.gov/giftrule/giftruledownload/giftruledata.zip", "https://web.archive.org/web/20150318055851/http://soprweb.senate.gov/giftrule/giftruledownload/giftruledata.zip", "https://web.archive.org/web/20190310121622/http://soprweb.senate.gov/giftrule/giftruledownload/giftruledata.zip", "https://web.archive.org/web/20230302004112/https://giftrule-disclosure.senate.gov/media/giftruledownloads/giftruledata.zip", "https://web.archive.org/web/20130512083149/http://soprweb.senate.gov/giftrule/giftruledownload/GiftRuleData.zip")
+wayback_urls <- c("https://web.archive.org/web/20080131052758/http://senate.gov/Data.zip", "https://web.archive.org/web/20110605144411/http://soprweb.senate.gov/giftrule/giftruledownload/giftruledata.zip", "https://web.archive.org/web/20150318055851/http://senate.gov/Data.zip")
 
 wayback_dataframe <- data.frame(urls = unlist(wayback_urls))
 
