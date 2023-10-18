@@ -1,0 +1,278 @@
+---
+title: "Google API Searches"
+author: "Khushboo Rathore"
+date: "`r Sys.Date()`"
+format:
+  html:
+    echo: false
+
+---
+
+```{r}
+#| label: load_libraries_settings_functions_data
+#| include: false
+# Loading code written by Sean Mussenden for all files in project
+
+###
+# Load libraries
+###
+library(here)
+source(here("analysis/functions/load_libraries_functions.R"))
+
+
+###
+# Load style functions
+###
+source(here("analysis/functions/style_functions.R"))
+
+
+###
+# Load data
+###
+source(here("analysis/functions/load_data_functions.R"))
+
+library(httr)
+library(tibble)
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE)
+
+## NOTE: Some column, row and table names have been abbreviated to comply with an NDA.
+
+# New approach
+# Strict to permissive
+## start with "ofn oln" AND "dfn dln" AND "oan" AND "ds" 
+### if return zero results, then just "ofn oln" and "dfn dln" 
+### 
+
+# get the API KEY here: https://developers.google.com/custom-search/v1/overview
+API_KEY <- "AIzaSyB7yJzl6VyEMI8x3SVtu58v4zPHIURnPhQ"
+# get your Search Engine ID on your CSE control panel
+SEARCH_ENGINE_ID <- "03401a2389a244bd0"
+
+
+dl <- cm %>%
+  left_join(ccu) %>% 
+  filter(!(is.na(oln) | str_detect(ofn, "redacted"))) %>% 
+  slice(1:ceiling(nrow(.)/2))
+
+list_of_os <- 1:nrow(dl)
+#death_number <- 1588
+
+google_search_page <- function(dnu) {
+  
+  temp <- dl %>%
+    slice(dn) %>%
+    mutate(across(everything(), str_to_title))  %>%
+    mutate(across(everything(), ~str_replace_all(.," ","%20")))
+  
+  ds <- temp$ds
+  dln <- temp$dln
+  dfn <- temp$dfn
+  oln <- temp$oln
+  ofn <- temp$ofn
+  oan <- temp$oan
+  du <- temp$du
+  
+  query_string <- paste0("%22", dfn, "%20", dln,"%22%20AND%20%22", ofn,"%20", oln, "%22%20AND%20%22", oan, "%22%20AND%20%22", ds, "%22")
+  qs1 <- query_string
+  
+  #%22 is a quote
+  #%20 is a space
+  
+  page <- 1
+  # constructing the URL
+  # doc: https://developers.google.com/custom-search/v1/using_rest
+  # calculating start, (page=2) => (start=11), (page=3) => (start=21)
+  start <- (page - 1) * 10 + 1
+  url <- paste0("https://www.googleapis.com/customsearch/v1?key=", API_KEY, "&cx=", SEARCH_ENGINE_ID, "&q=", query_string, "&start=", start)
+  
+  response <- GET(url)
+  Sys.sleep(1)
+  
+  data <- content(response, "parsed")
+  
+  # create empty vectors to store the results
+  titles <- character()
+  descriptions <- character()
+  long_descriptions <- character()
+  urls <- character()
+  
+  # get the result items
+  alt_search <- FALSE
+  if(length(data$items) == 0) {
+    alt_search <- TRUE
+    query_string <- paste0("%22",dfn, "%20", dln,"%22%20%22", ofn,"%20", oln, "%22")
+    page <- 1
+    # constructing the URL
+    # doc: https://developers.google.com/custom-search/v1/using_rest
+    # calculating start, (page=2) => (start=11), (page=3) => (start=21)
+    start <- (page - 1) * 10 + 1
+    url <- paste0("https://www.googleapis.com/customsearch/v1?key=", API_KEY, "&cx=", SEARCH_ENGINE_ID, "&q=", query_string, "&start=", start)
+    
+    response <- GET(url)
+    Sys.sleep(1)
+    data <- content(response, "parsed")
+    
+    if(length(data$items) == 0) {
+      # print("This search using the Google API yielded no results.")
+      qs2 <- query_string
+      death_info <- gsub("%20", " ", paste(ds, "|",  dfn, dln, "|", oan, "|", ofn, oln))
+      death_output <- c(
+      paste0("### OFFICER | <a href='", 
+           temp$du,
+           "' target='_blank'>",death_info,
+           "</a>"),
+    paste0("\n\n<br>"),
+    paste0("This search was attempted using the following queries: ", gsub("%22", "''", gsub("%20", " ", qs1))," and ", gsub("%22", "''", gsub("%20", " ", qs2)), " and returned no results. Manual google searching may yield additional information."),
+    paste0("\n\n<br>")
+    )
+      death_separate <- c(
+      paste0("<hr><hr>"),
+      paste0("\n\n")
+    )
+    
+    # Append to write out object
+    
+    search_list <- unlist(c(
+      data$queries$request[[1]][2], data$searchInformation$searchTime[1], data$searchInformation$totalResults[1]
+    ))
+    
+    death_output <- cat(death_output,search_list)
+    death_output <- cat(death_output,death_separate)
+
+    # Update to turn to markdown list
+    death_output <- markdown_list(death_output)
+      
+    return(death_output)
+    }
+
+  }
+    search_items <- data$items
+    #i <- 5
+    # iterate over the search results
+    for (i in 1:length(search_items)) {
+      search_item <- search_items[[i]]
+    
+    # check if long description exists
+      if ("pagemap" %in% names(search_item) &&
+          "metatags" %in% names(search_item$pagemap) &&
+          length(search_item$pagemap$metatags) > 0 &&
+          "og:description" %in% names(search_item$pagemap$metatags[[1]])) {
+        long_description <- search_item$pagemap$metatags[[1]]$`og:description`
+      } else {
+        long_description <- "N/A"
+      }
+    
+      # get the page title
+      title <- search_item$title
+      # page snippet
+      snippet <- search_item$snippet
+      # extract the page url
+      link <- search_item$link
+      
+      # store the results in respective vectors
+      titles <- c(titles, title)
+      descriptions <- c(descriptions, snippet)
+      long_descriptions <- c(long_descriptions, long_description)
+      urls <- c(urls, link)
+      
+    }
+    
+    results_df <- tibble(
+    title = titles,
+    description = descriptions,
+    long_description = long_descriptions,
+    url = urls
+    )
+  
+  # print the dataframe
+  # print(results_df)
+  
+    # List of all links related to a search on the first page
+  links_df <- results_df %>% 
+    mutate(hyperlink = paste0("<a href='", url, "' target='_blank'>", title, "</a>")) %>% 
+    mutate(di = gsub("%20", " ", paste(ds, "|",  dfn, dln, "|", oan, "|", ofn, oln)))
+  
+  # If the alternate search path was used, provide that information
+  if(alt_search) {
+  do <- c(
+     paste0("### O | <a href='", 
+           temp$du[1],
+           "' target='_blank'>",links_df$di[1],
+           "</a>"),
+    paste0("\n\n<br>"),
+    paste0("This search was completed using the following query: ", gsub("%22", "''", gsub("%20", " ", query_string)), ", and may not reflect all available results. A search using the query: ", gsub("%22", "''", gsub("%20", " ", qs1))," yielded no results. Manual google searching may yield additional information."),
+    paste0("\n\n<br>")
+    )
+  } else {
+    do <- c(
+     paste0("### O | <a href='", 
+           temp$du[1],
+           "' target='_blank'>",links_df$di[1],
+           "</a>"),
+    paste0("\n\n<br>"),
+    paste0("This search was completed using the following query: ", gsub("%22", "''", gsub("%20", " ", query_string)), ", and may not reflect all available results. Manual google searching may yield additional information."),
+    paste0("\n\n<br>")
+    )
+  }
+  for (row_number in 1:nrow(links_df)) {
+        
+      # Deal with one search result at a time
+       one_case <- links_df %>%
+        slice(row_number)
+       
+       # Create output
+       search_output <- c(
+        paste0("**Search Result ", row_number,":** ",one_case$hyperlink,"<br>"),
+        paste0("**Search URL ", row_number,":** ",one_case$url,"<br>"),
+        paste0("**Result Desription ", row_number,":** ",one_case$description,"<br>"),
+        paste0("\n\n"))
+       
+       # Append video output to death output
+       do <- cat(do,search_output)
+       
+    }
+    
+    # After loop is over, create pagebreak
+    des <- c(
+      paste0("<hr><hr>"),
+      paste0("\n\n")
+    )
+    
+    # Append to write out object
+    
+    
+    search_list <- unlist(c(
+      data$queries$request[[1]][3], data$searchInformation$searchTime[1], data$searchInformation$totalResults[1]
+    ))
+    
+    do <- cat(do,search_list)
+    do <- cat(do,des)
+    
+    # Update to turn to markdown list
+    do <- markdown_list(do)
+    
+}
+
+
+
+```
+# Summary
+
+-   **Generated on**: 2023-06-28
+-   **Generated by**: Khushboo Rathore
+-   **Reviewed by**: 
+-   **Last updated**: `r Sys.Date()`
+-   **Analysis done for**: 
+
+## Search Results
+
+```{r results="asis"}
+#| echo: false
+walk(loo,google_search_page)
+```
+
+ 
