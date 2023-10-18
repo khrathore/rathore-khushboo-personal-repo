@@ -54,6 +54,7 @@ all_pdf_urls_5 <- map_dfr(c(2601:3250), pdf_urls)
 Sys.sleep(2)
 all_pdf_urls_6 <- map_dfr(c(3251:3900), pdf_urls)
 Sys.sleep(2)
+
 all_pdf_urls_7 <- map_dfr(c(3901:4550), pdf_urls)
 Sys.sleep(2)
 all_pdf_urls_8 <- map_dfr(c(4551:5200), pdf_urls)
@@ -61,5 +62,35 @@ Sys.sleep(2)
 all_pdf_urls_9 <- map_dfr(c(5201:5850), pdf_urls)
 Sys.sleep(2)
 all_pdf_urls_10 <- map_dfr(c(5851:nrow(all_registrants)), pdf_urls)
-l```
+
+all_pdf_urls_4 <- all_pdf_urls_4 %>% 
+  clean_names() %>% 
+  select(-no_data_found)
+
+all_pdf_urls_5 <- all_pdf_urls_5 %>% 
+  clean_names() %>% 
+  select(-no_data_found)
+
+all_pdf_urls_6 <- all_pdf_urls_6 %>% 
+  clean_names() %>% 
+  select(-no_data_found)
+
+all_pdf_urls_7 <- all_pdf_urls_7 %>% 
+  clean_names() %>% 
+  select(-no_data_found)
+
+all_pdf_urls_8 <- all_pdf_urls_8 %>% 
+  clean_names() %>% 
+  select(-no_data_found)
+
+all_pdf_urls_10 <- all_pdf_urls_10 %>% 
+  clean_names() %>% 
+  select(-no_data_found)
+
+all_pdf_urls_clean <- all_pdf_urls_1 %>% 
+  rbind(all_pdf_urls_2, all_pdf_urls_3) %>% 
+  clean_names() %>% 
+  rbind(all_pdf_urls_4, all_pdf_urls_5, all_pdf_urls_6, all_pdf_urls_7, all_pdf_urls_8, all_pdf_urls_10) %>% 
+  full_join(all_registrants, by = "registration_number")
+```
 
