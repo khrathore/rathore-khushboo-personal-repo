@@ -10,7 +10,8 @@ library(janitor)
 
 options(readr.show_col_types = FALSE)
 ```
-
+# SECTION ONE: DATA SCRAPE
+## Data scrape functions
 ```{r}
 
 pdf_urls <- function(registrant) {
@@ -23,7 +24,7 @@ pdf_urls <- function(registrant) {
 }
 
 ```
-
+## Data scraping
 ```{r}
 active_registrants_url <- "https://efile.fara.gov/api/v1/Registrants/csv/Active"
 
@@ -54,6 +55,7 @@ all_pdf_urls_5 <- map_dfr(c(2601:3250), pdf_urls)
 Sys.sleep(2)
 all_pdf_urls_6 <- map_dfr(c(3251:3900), pdf_urls)
 Sys.sleep(2)
+
 all_pdf_urls_7 <- map_dfr(c(3901:4550), pdf_urls)
 Sys.sleep(2)
 all_pdf_urls_8 <- map_dfr(c(4551:5200), pdf_urls)
@@ -61,5 +63,97 @@ Sys.sleep(2)
 all_pdf_urls_9 <- map_dfr(c(5201:5850), pdf_urls)
 Sys.sleep(2)
 all_pdf_urls_10 <- map_dfr(c(5851:nrow(all_registrants)), pdf_urls)
-l```
+
+all_pdf_urls_4 <- all_pdf_urls_4 %>% 
+  clean_names() %>% 
+  select(-no_data_found)
+
+all_pdf_urls_5 <- all_pdf_urls_5 %>% 
+  clean_names() %>% 
+  select(-no_data_found)
+
+all_pdf_urls_6 <- all_pdf_urls_6 %>% 
+  clean_names() %>% 
+  select(-no_data_found)
+
+all_pdf_urls_7 <- all_pdf_urls_7 %>% 
+  clean_names() %>% 
+  select(-no_data_found)
+
+all_pdf_urls_8 <- all_pdf_urls_8 %>% 
+  clean_names() %>% 
+  select(-no_data_found)
+
+all_pdf_urls_10 <- all_pdf_urls_10 %>% 
+  clean_names() %>% 
+  select(-no_data_found)
+
+all_pdf_urls_clean <- all_pdf_urls_1 %>% 
+  rbind(all_pdf_urls_2, all_pdf_urls_3) %>% 
+  clean_names() %>% 
+  rbind(all_pdf_urls_4, all_pdf_urls_5, all_pdf_urls_6, all_pdf_urls_7, all_pdf_urls_8, all_pdf_urls_10) %>% 
+  full_join(all_registrants, by = "registration_number")
+
+write_csv(all_pdf_urls_clean, "all_pdfs.csv")
+```
+
+# SECTION TWO: PRELIM DATA ANALYSIS
+
+## Functions
+```{r}
+file = 1
+get_pdfs <- function(file) {
+  file_info <- egypt_analysis[file, ]
+  file_link <- file_info$url
+  reg_num <- file_info$registration_number
+  date_stamp <- file_info$date_stamped
+  doc_type <- gsub(" ", "_", file_info$document_type)
+  file_name <- paste0(paste(date_stamp, reg_num, doc_type, sep = "_"), ".pdf")
+  file_path <- paste0("fara_downloads/", file_name)
+  download.file(file_link, )
+  
+}
+```
+
+
+
+## Exploratory analysis
+```{r}
+all_pdf_joined <- read_csv("all_pdfs.csv") %>% 
+  mutate(date_stamped = as.Date(date_stamped, "%m/%d/%Y")) %>% 
+  mutate(registration_date = as.Date(registration_date, "%m/%d/%Y"))
+
+no_documents <- all_pdf_joined %>% 
+  filter(is.na(url))
+
+orgs_with_docs <- all_pdf_joined %>% 
+  filter(!is.na(url))
+
+doc_types <- all_pdf_joined %>% 
+  group_by(document_type) %>% 
+  count(.)
+
+docs_per_org <- orgs_with_docs %>% 
+  group_by(registration_number, registrant_name, document_type) %>%
+  count()
+
+docs_per_date <- orgs_with_docs %>% 
+  group_by(registration_number, registrant_name, date_stamped) %>% 
+  count(.)
+
+foreign_principals <- orgs_with_docs %>% 
+  distinct(registration_number, .keep_all = TRUE) %>% 
+  group_by(foreign_principal_country) %>% 
+  count(.)
+
+```
+
+## Egypt
+```{r}
+egypt_analysis <- orgs_with_docs %>% 
+  filter(str_detect(foreign_principal_country, "EGYPT"))
+
+
+```
+
 
