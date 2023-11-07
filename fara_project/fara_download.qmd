@@ -101,16 +101,16 @@ write_csv(all_pdf_urls_clean, "all_pdfs.csv")
 
 ## Functions
 ```{r}
-file = 1
+
 get_pdfs <- function(file) {
-  file_info <- egypt_analysis[file, ]
+  file_info <- ab_subset[file, ]
   file_link <- file_info$url
   reg_num <- file_info$registration_number
   date_stamp <- file_info$date_stamped
   doc_type <- gsub(" ", "_", file_info$document_type)
   file_name <- paste0(paste(date_stamp, reg_num, doc_type, sep = "_"), ".pdf")
   file_path <- paste0("fara_downloads/", file_name)
-  download.file(file_link, )
+  download.file(file_link, file_path)
   
 }
 ```
@@ -148,11 +148,14 @@ foreign_principals <- orgs_with_docs %>%
 
 ```
 
-## Egypt
+## Exhibit AB docs
 ```{r}
-egypt_analysis <- orgs_with_docs %>% 
-  filter(str_detect(foreign_principal_country, "EGYPT"))
+exhibit_ab <- orgs_with_docs %>% 
+  filter(str_detect(document_type, "Exhibit AB"))
 
+ab_subset <- exhibit_ab[1:20, ]
+  
+walk(1:nrow(ab_subset), get_pdfs)
 
 ```
 
