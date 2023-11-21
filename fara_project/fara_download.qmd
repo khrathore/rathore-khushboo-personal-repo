@@ -108,10 +108,16 @@ get_pdfs <- function(file) {
   reg_num <- file_info$registration_number
   date_stamp <- file_info$date_stamped
   doc_type <- gsub(" ", "_", file_info$document_type)
+<<<<<<< Updated upstream
   file_name <- paste0(paste(date_stamp, reg_num, doc_type, sep = "_"), ".pdf")
   file_path <- paste0("fara_downloads/", file_name)
   download.file(file_link, file_path)
   
+=======
+  file_name <- paste(date_stamp, reg_num, doc_type, sep = "_")
+  file_path <- paste0("fara_downloads/", file_name, ".pdf")
+  download.file(file_link, file_path, mode = "wb")
+>>>>>>> Stashed changes
 }
 ```
 
@@ -119,6 +125,9 @@ get_pdfs <- function(file) {
 
 ## Exploratory analysis
 ```{r}
+
+# Look at all ABs and Supplemental Statements
+
 all_pdf_joined <- read_csv("all_pdfs.csv") %>% 
   mutate(date_stamped = as.Date(date_stamped, "%m/%d/%Y")) %>% 
   mutate(registration_date = as.Date(registration_date, "%m/%d/%Y"))
@@ -132,6 +141,9 @@ orgs_with_docs <- all_pdf_joined %>%
 doc_types <- all_pdf_joined %>% 
   group_by(document_type) %>% 
   count(.)
+
+filtered_docs <- all_pdf_joined %>% 
+  filter(str_detect(document_type, "AB|Supplemental"))
 
 docs_per_org <- orgs_with_docs %>% 
   group_by(registration_number, registrant_name, document_type) %>%
@@ -153,9 +165,13 @@ foreign_principals <- orgs_with_docs %>%
 exhibit_ab <- orgs_with_docs %>% 
   filter(str_detect(document_type, "Exhibit AB"))
 
+<<<<<<< Updated upstream
 ab_subset <- exhibit_ab[1:20, ]
   
 walk(1:nrow(ab_subset), get_pdfs)
+=======
+walk(c(1:nrow(egypt_analysis)), get_pdfs)
+>>>>>>> Stashed changes
 
 ```
 
