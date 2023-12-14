@@ -162,8 +162,25 @@ foreign_principals <- orgs_with_docs %>%
 
 ## Exhibit AB docs
 ```{r}
-exhibit_ab <- orgs_with_docs %>% 
-  filter(str_detect(document_type, "Exhibit AB"))
+docs_country <- orgs_with_docs %>% 
+  filter(!is.na(foreign_principal_country)) %>% 
+  distinct(registration_number, foreign_principal_country) %>% 
+  distinct(registration_number, .keep_all = TRUE) %>% 
+  filter(foreign_principal_country == "EGYPT")
+
+# Of note: Distinctions are made by the registrant, not the foreign principal. A registrant can have multiple foreign principals. A signular person can also serve multiple foreign principals.
+
+filtered_docs <- orgs_with_docs %>% 
+  anti_join(terminated_reg, by = "registration_number") %>% 
+  filter(!(str_detect(document_type, "Supplemental|Exhibit C|Informational"))) %>% 
+  filter(year(date_stamped) >= 2013)
+
+egypt_docs <- filtered_docs %>% 
+  filter(foreign_principal_country == "EGYPT" | str_detect(foreign_principal_name, "Egypt"))
+  inner_join(docs_country, by = "registration_number") %>% 
+  filter(!str_detect(url, "Available")) %>% 
+  mutate(foreign_principal_country = foreign_principal_country.y) %>% 
+  select(-foreign_principal_country.x, -foreign_principal_country.y)
 
 <<<<<<< Updated upstream
 ab_subset <- exhibit_ab[1:20, ]
