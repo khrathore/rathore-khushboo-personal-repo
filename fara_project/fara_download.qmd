@@ -103,21 +103,14 @@ write_csv(all_pdf_urls_clean, "all_pdfs.csv")
 ```{r}
 
 get_pdfs <- function(file) {
-  file_info <- ab_subset[file, ]
+  file_info <- egypt_docs[file, ]
   file_link <- file_info$url
   reg_num <- file_info$registration_number
   date_stamp <- file_info$date_stamped
   doc_type <- gsub(" ", "_", file_info$document_type)
-<<<<<<< Updated upstream
-  file_name <- paste0(paste(date_stamp, reg_num, doc_type, sep = "_"), ".pdf")
-  file_path <- paste0("fara_downloads/", file_name)
-  download.file(file_link, file_path)
-  
-=======
   file_name <- paste(date_stamp, reg_num, doc_type, sep = "_")
   file_path <- paste0("fara_downloads/", file_name, ".pdf")
   download.file(file_link, file_path, mode = "wb")
->>>>>>> Stashed changes
 }
 ```
 
@@ -175,20 +168,14 @@ filtered_docs <- orgs_with_docs %>%
   filter(!(str_detect(document_type, "Supplemental|Exhibit C|Informational"))) %>% 
   filter(year(date_stamped) >= 2013)
 
-egypt_docs <- filtered_docs %>% 
-  filter(foreign_principal_country == "EGYPT" | str_detect(foreign_principal_name, "Egypt"))
-  inner_join(docs_country, by = "registration_number") %>% 
-  filter(!str_detect(url, "Available")) %>% 
-  mutate(foreign_principal_country = foreign_principal_country.y) %>% 
-  select(-foreign_principal_country.x, -foreign_principal_country.y)
+#Of note: Many orgs have not consistently submitted their updates every six months.
 
-<<<<<<< Updated upstream
-ab_subset <- exhibit_ab[1:20, ]
-  
-walk(1:nrow(ab_subset), get_pdfs)
-=======
-walk(c(1:nrow(egypt_analysis)), get_pdfs)
->>>>>>> Stashed changes
+egypt_docs <- filtered_docs %>% 
+  filter(foreign_principal_country == "EGYPT" | str_detect(foreign_principal_name, "Egypt")) %>% 
+  filter(!str_detect(url, "Available"))
+
+
+walk(c(1:nrow(egypt_docs)), get_pdfs)
 
 ```
 
