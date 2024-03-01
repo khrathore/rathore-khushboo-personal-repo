@@ -1,0 +1,90 @@
+---
+title: LNN Ecosystem Analysis Data Analysis and Cleaning
+date: 29 February 2023
+author: Khushboo Rathore
+---
+
+```{r}
+library(tidyverse)
+library(googlesheets4)
+library(janitor)
+
+```
+
+# Loading and Basic Cleaning
+```{r}
+coded_stories <- read_sheet("https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "all_stories")
+
+clean_stories <- coded_stories %>% 
+  filter(!(is.na(publication_name) | is.na(headline) | is.na(date))) %>% 
+  mutate(publication_name = str_squish(publication_name))
+  
+all_papers <- read_sheet("https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "all_papers")
+
+```
+
+# Content Analysis
+
+## Further Cleaning
+```{r}
+na_topics <- clean_stories %>% 
+  filter(is.na(topic_a) & is.na(topic_b))
+
+patch_dvcheck <- clean_stories %>% 
+  filter(str_detect(publication_name, "Patch")) %>% 
+  distinct(headline, .keep_all = TRUE) %>% 
+  mutate(publication_name = "Patch Maryland")
+
+all_clean <- clean_stories %>% 
+  filter(!str_detect(publication_name, "Patch")) %>% 
+  rbind(patch_dvcheck)
+
+total_stories <- nrow(all_clean)
+```
+
+## Topic Analysis
+```{r}
+topic_a <- all_clean %>% 
+  group_by(topic_a) %>% 
+  count() %>% 
+  mutate(counta = n) %>% 
+  select(-n)
+
+all_topics <- all_clean %>% 
+  group_by(topic_b) %>% 
+  count() %>% 
+  mutate(countb = case_when(
+    is.na(topic_b)~0,
+    TRUE~n
+  )) %>%
+  select(-n) %>% 
+  inner_join(topic_a, by = c("topic_b" = "topic_a")) %>% 
+  mutate(full_count = counta + countb) %>% 
+  rename(topic = topic_b) %>% 
+  select(topic, full_count) %>% 
+  mutate(percent = round(full_count/total_stories*100,2))
+
+write_sheet(all_topics, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "topic_roundup")
+```
+
+
+##Author & Type Analysis
+```{r}
+authors <- all_clean %>% 
+  group_by(author) %>% 
+  count() %>%
+  rename(count = n) %>% 
+  mutate(percent = round(count/total_stories*100,2))
+
+write_sheet(authors, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "author_roundup")
+
+type <- all_clean %>% 
+  group_by(story_type) %>% 
+  count() %>%
+  rename(count = n) %>% 
+  mutate(percent = round(count/total_stories*100,2))
+
+write_sheet(type, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "type_roundup")
+```
+
+
