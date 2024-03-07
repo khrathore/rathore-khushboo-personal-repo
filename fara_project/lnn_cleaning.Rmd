@@ -24,7 +24,6 @@ all_papers <- read_sheet("https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn
 ```
 
 # Content Analysis
-
 ## Further Cleaning
 ```{r}
 na_topics <- clean_stories %>% 
@@ -54,17 +53,58 @@ all_topics <- all_clean %>%
   group_by(topic_b) %>% 
   count() %>% 
   mutate(countb = case_when(
-    is.na(topic_b)~0,
+    is.na(topic_b)~NA,
     TRUE~n
   )) %>%
   select(-n) %>% 
-  inner_join(topic_a, by = c("topic_b" = "topic_a")) %>% 
+  full_join(topic_a, by = c("topic_b" = "topic_a")) %>%
+  mutate(counta = case_when(
+    is.na(counta)~0,
+    TRUE~counta
+  )) %>%
+  mutate(countb = case_when(
+    is.na(countb)~0,
+    TRUE~countb
+  )) %>%
   mutate(full_count = counta + countb) %>% 
   rename(topic = topic_b) %>% 
   select(topic, full_count) %>% 
-  mutate(percent = round(full_count/total_stories*100,2))
+  mutate(percent = round(full_count/total_stories*100,2)) %>% 
+  filter(!is.na(topic))
 
 write_sheet(all_topics, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "topic_roundup")
+
+topic_atype <- all_clean %>% 
+  group_by(topic_a, story_type) %>% 
+  count() %>% 
+  mutate(counta = n) %>% 
+  rename(topic = topic_a) %>% 
+  select(-n)
+
+all_topics_type <- all_clean %>% 
+  group_by(topic_b, story_type) %>% 
+  count() %>% 
+  mutate(countb = case_when(
+    is.na(topic_b)~0,
+    TRUE~n
+  )) %>%
+  rename(topic = topic_b) %>% 
+  select(-n) %>% 
+  full_join(topic_atype, by = c("topic", "story_type")) %>% 
+  mutate(counta = case_when(
+    is.na(counta)~0,
+    TRUE~counta
+  )) %>%
+  mutate(countb = case_when(
+    is.na(countb)~0,
+    TRUE~countb
+  )) %>%
+  mutate(count = counta + countb) %>% 
+  select(topic, story_type, count) %>%
+  left_join(all_topics, by = "topic") %>% 
+  mutate(percent = round(count/full_count*100,2))
+
+write_sheet(all_topics_type, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "topics_by_type")
 ```
 
 
@@ -86,5 +126,289 @@ type <- all_clean %>%
 
 write_sheet(type, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "type_roundup")
 ```
+# Paper Analysis
 
+## County Counts
+```{r}
+count_papers <- nrow(all_papers)
+
+areas_served <- all_papers %>% 
+  group_by(publication_coverage) %>% 
+  count() %>% 
+  rename(count = n) %>% 
+  mutate(percent = round(count/count_papers*100,2))
+
+write_sheet(areas_served, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=1194646579", sheet = "by_coverage")
+
+areas_located <- all_papers %>% 
+  group_by(publication_location) %>% 
+  count() %>% 
+  rename(count = n) %>% 
+  mutate(percent = round(count/count_papers*100,2))
+
+write_sheet(areas_located, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=1194646579", sheet = "by_location")
+
+coded_papers <- all_papers %>% 
+  filter(coded == "a. coded")
+
+coded_count <- nrow(coded_papers)
+
+areas_served_coded <- coded_papers %>% 
+  group_by(publication_coverage) %>% 
+  count() %>% 
+  rename(count = n) %>% 
+  mutate(percent = round(count/coded_count*100,2))
+
+write_sheet(areas_served_coded, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=1194646579", sheet = "coded_by_coverage")
+
+areas_located_coded <- coded_papers %>% 
+  group_by(publication_location) %>% 
+  count() %>% 
+  rename(count = n) %>% 
+  mutate(percent = round(count/coded_count*100,2))
+
+write_sheet(areas_located_coded, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=1194646579", sheet = "coded_by_location")
+
+by_coded <- all_papers %>% 
+  group_by(coded) %>% 
+  count() %>% 
+  rename(count = n) %>% 
+  mutate(percent = round(count/count_papers*100,2))
+
+write_sheet(by_coded, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=1194646579", sheet = "by_coding_status")
+
+by_type <- all_papers %>% 
+  group_by(type) %>% 
+  count() %>% 
+  rename(count = n) %>% 
+  mutate(percent = round(count/count_papers*100,2))
+
+write_sheet(by_type, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=1194646579", sheet = "by_pubtype")
+
+by_type_coded <- coded_papers %>% 
+  group_by(type) %>% 
+  count() %>% 
+  rename(count = n) %>% 
+  mutate(percent = round(count/coded_count*100,2))
+
+write_sheet(by_type_coded, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=1194646579", sheet = "by_pubtype_coded")
+```
+## Topic, Author, Story by Org Type (All)
+```{r}
+story_paper_join <- all_clean %>% 
+  left_join(all_papers, by = "publication_name")
+
+story_by_type <- story_paper_join %>% 
+  filter(coded == "a. coded") %>% 
+  group_by(type) %>% 
+  count() %>% 
+  rename(full_count = n)
+
+author_type <- story_paper_join %>% 
+  group_by(author, type) %>% 
+  count() %>% 
+  rename(count = n) %>% 
+  left_join(story_by_type) %>% 
+  mutate(percent = round(count/full_count*100,2))
+  
+write_sheet(author_type, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=1194646579", sheet = "by_author_and_type_coded")
+
+story_type <- story_paper_join %>% 
+  group_by(story_type, type) %>% 
+  count() %>% 
+  rename(subcount = n) %>% 
+  left_join(story_by_type) %>% 
+  mutate(percent = round(subcount/full_count*100,2))
+  
+write_sheet(story_type, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=1194646579", sheet = "by_story_and_type")
+
+topic_atype_pub <- story_paper_join %>% 
+  group_by(topic_a, type) %>% 
+  count() %>% 
+  mutate(counta = n) %>% 
+  rename(topic = topic_a) %>% 
+  select(-n)
+
+all_topics_type_pub <-story_paper_join %>% 
+  group_by(topic_b, type) %>% 
+  count() %>% 
+  mutate(countb = case_when(
+    is.na(topic_b)~0,
+    TRUE~n
+  )) %>%
+  rename(topic = topic_b) %>% 
+  select(-n) %>% 
+  full_join(topic_atype_pub, by = c("topic", "type")) %>% 
+  mutate(counta = case_when(
+    is.na(counta)~0,
+    TRUE~counta
+  )) %>%
+  mutate(countb = case_when(
+    is.na(countb)~0,
+    TRUE~countb
+  )) %>%
+  mutate(count = counta + countb) %>% 
+  left_join(story_by_type) %>% 
+  mutate(percent = round(count/full_count*100,2)) %>% 
+  select(topic, type, count, full_count, percent)
+
+write_sheet(all_topics_type_pub, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "topics_by_pubtype")
+```
+
+
+## Topic, Author, Story by Org Type (Coded)
+```{r}
+story_paper_join_coded <- all_clean %>% 
+  left_join(all_papers, by = "publication_name")
+
+story_by_type_coded <- story_paper_join_coded %>% 
+  group_by(type) %>% 
+  count() %>% 
+  rename(full_count = n)
+
+author_type_coded <- story_paper_join_coded %>% 
+  group_by(author, type) %>% 
+  count() %>% 
+  rename(count = n) %>% 
+  left_join(story_by_type_coded) %>% 
+  mutate(percent = round(count/full_count*100,2))
+  
+write_sheet(author_type_coded, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=1194646579", sheet = "by_author_and_type_coded")
+
+story_type_coded <- story_paper_join_coded %>% 
+  group_by(story_type, type) %>% 
+  count() %>% 
+  rename(subcount = n) %>% 
+  left_join(story_by_type_coded) %>% 
+  mutate(percent = round(subcount/full_count*100,2))
+  
+write_sheet(story_type_coded, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=1194646579", sheet = "by_story_and_type_coded")
+
+topic_atype_pub_coded <- story_paper_join_coded %>% 
+  group_by(topic_a, type) %>% 
+  count() %>% 
+  mutate(counta = n) %>% 
+  rename(topic = topic_a) %>% 
+  select(-n)
+
+all_topics_type_pub_coded <-story_paper_join_coded %>% 
+  group_by(topic_b, type) %>% 
+  count() %>% 
+  mutate(countb = case_when(
+    is.na(topic_b)~0,
+    TRUE~n
+  )) %>%
+  rename(topic = topic_b) %>% 
+  select(-n) %>% 
+  full_join(topic_atype_pub_coded, by = c("topic", "type")) %>% 
+  mutate(counta = case_when(
+    is.na(counta)~0,
+    TRUE~counta
+  )) %>%
+  mutate(countb = case_when(
+    is.na(countb)~0,
+    TRUE~countb
+  )) %>%
+  mutate(count = counta + countb) %>% 
+  left_join(story_by_type) %>% 
+  mutate(percent = round(count/full_count*100,2)) %>% 
+  select(topic, type, count, full_count, percent)
+
+write_sheet(all_topics_type_pub_coded, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "topics_by_pubtype_coded")
+```
+
+## Daily Voice
+```{r}
+daily_voice <- all_clean %>% 
+  filter(publication_name == "Daily Voice")
+
+daily_voice_count <- nrow(daily_voice)
+
+story_type_daily <- daily_voice %>% 
+  group_by(story_type) %>% 
+  count() %>%
+  mutate(percent = round(n/daily_voice_count*100,2))
+  
+write_sheet(story_type_daily, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "daily_voice_story_type")
+
+topica_dv <- daily_voice %>% 
+  group_by(topic_a) %>% 
+  count() %>% 
+  mutate(counta = n) %>% 
+  rename(topic = topic_a) %>% 
+  select(-n)
+
+all_topics_dv <- daily_voice %>% 
+  group_by(topic_b) %>% 
+  count() %>% 
+  mutate(countb = case_when(
+    is.na(topic_b)~0,
+    TRUE~n
+  )) %>%
+  rename(topic = topic_b) %>% 
+  select(-n) %>% 
+  full_join(topica_dv, by = c("topic")) %>% 
+  mutate(countb = case_when(
+    is.na(countb)~0,
+    TRUE~countb
+  )) %>%
+  mutate(counta = case_when(
+    is.na(counta)~0,
+    TRUE~counta
+  )) %>% 
+  mutate(count = counta + countb) %>% 
+  mutate(percent = round(count/daily_voice_count*100,2)) %>% 
+  select(topic, count, percent)
+  
+write_sheet(all_topics_dv, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "daily_voice_topics")
+
+```
+
+
+## Patch
+```{r}
+patch_stories <- all_clean %>% 
+  filter(publication_name == "Patch Maryland")
+
+patch_count <- nrow(patch_stories)
+
+story_type_patch <- patch_stories %>% 
+  group_by(story_type) %>% 
+  count() %>%
+  mutate(percent = round(n/patch_count*100,2))
+  
+write_sheet(story_type_patch, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "story_type_patch")
+
+topica_patch <- patch_stories %>% 
+  group_by(topic_a) %>% 
+  count() %>% 
+  mutate(counta = n) %>% 
+  rename(topic = topic_a) %>% 
+  select(-n)
+
+all_topics_patch <- patch_stories %>% 
+  group_by(topic_b) %>% 
+  count() %>% 
+  mutate(countb = case_when(
+    is.na(topic_b)~0,
+    TRUE~n
+  )) %>%
+  rename(topic = topic_b) %>% 
+  select(-n) %>% 
+  full_join(topica_patch, by = c("topic")) %>% 
+  mutate(countb = case_when(
+    is.na(countb)~0,
+    TRUE~countb
+  )) %>%
+  mutate(counta = case_when(
+    is.na(counta)~0,
+    TRUE~counta
+  )) %>% 
+  mutate(count = counta + countb) %>% 
+  mutate(percent = round(count/patch_count*100,2)) %>% 
+  select(topic, count, percent)
+  
+write_sheet(all_topics_patch, "https://docs.google.com/spreadsheets/d/1G7tBh6SGUi_KPn1JzZYuzLQpmgCPlVlEgO72e8RZo9Y/edit#gid=224583311", sheet = "patch_story_topics")
+
+```
 
