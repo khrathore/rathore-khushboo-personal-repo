@@ -1,0 +1,461 @@
+---
+title: "Senate Data Retrieval from Wayback Archive"
+date: "09/08/2023"
+author: Khushboo Rathore
+---
+
+```{r}
+library(xml2)
+library(methods)
+library(tidyverse)
+library(XML)
+library(furrr)
+library(rvest)
+library(httr)
+library(jsonlite)
+```
+# Function to convert xml listings into rows of dataframes. Run this before running the codeblock below.
+
+```{r}
+#JUST for second XML, which has some different factors
+xml_two_to_table <- function(file_number) {
+  xml_listing <- all_listings[[file_number]]
+  # Get attributes of filer and office name
+  LastName <- xml_attr(xml_listing, "LastName")
+  FirstName <- xml_attr(xml_listing, "FirstName")
+  OfficeName <- xml_attr(xml_find_first(xml_listing, ".//dbo.Office"), "OfficeName")
+  # Create a list of all filings made my the filer
+  all_filings <- xml_find_all(xml_listing, ".//dbo.Document")
+  traveler_filings <- data.frame()
+  #For each filing, extract information and put it in a dataframe
+  for(filing_num in 1:length(all_filings)) {
+    filing <- all_filings[[filing_num]]
+    ReportingYear <- xml_attr(filing, "ReportingYear")
+    BeginTravelDate <- xml_attr(filing, "BeginTravelDate")
+    EndTravelDate <- xml_attr(filing, "EndTravelDate")
+    DateReceived <- xml_attr(filing, "DateReceived")
+    TransactionDate <- xml_attr(filing, "TransactionDate")
+    Pages <- xml_attr(filing, "Pages")
+    ReportTitle <- xml_attr(xml_find_first(filing, ".//dbo.Reports"), "ReportTitle")
+    DocURL <- xml_attr(xml_find_first(filing, ".//dbo.Reports"), "DocURL")
+    report_data <- c(LastName, FirstName, OfficeName, ReportTitle, ReportingYear, BeginTravelDate, EndTravelDate, DateReceived, TransactionDate, Pages, DocURL)
+    traveler_filings <- rbind(traveler_filings, report_data)
+  }
+  traveler_filings <- setNames(traveler_filings, c("filer_lastname", "filer_firstname", "filer_office", "report_title", "reporting_year", "begin_travel_date", "end_travel_date", "date_received", "transaction_date", "num_pages", "doc_url")) %>% 
+    mutate(begin_travel_date = as.Date(begin_travel_date)) %>% 
+    mutate(end_travel_date = as.Date(end_travel_date)) %>% 
+    mutate(date_received = as.Date(date_received)) %>% 
+    mutate(transaction_date = as.Date(transaction_date)) %>% 
+    mutate(num_pages = as.double(num_pages)) %>% 
+    mutate(reporting_year = as.double(reporting_year))
+}
+
+# Function to convert all xml listings into a table for each filer
+xml_to_table <- function(file_number) {
+  xml_listing <- all_listings[[file_number]]
+  # Get attributes of filer and office name
+  LastName <- xml_attr(xml_listing, "LastName")
+  FirstName <- xml_attr(xml_listing, "FirstName")
+  OfficeName <- xml_attr(xml_find_first(xml_listing, ".//dbo.Office"), "OfficeName")
+  # Create a list of all filings made my the filer
+  all_filings <- xml_find_all(xml_listing, ".//dbo.Document")
+  traveler_filings <- data.frame()
+  #For each filing, extract information and put it in a dataframe
+  for(filing_num in 1:length(all_filings)) {
+    filing <- all_filings[[filing_num]]
+    ReportingYear <- xml_attr(filing, "ReportingYear")
+    BeginTravelDate <- xml_attr(filing, "BeginTravelDate")
+    EndTravelDate <- xml_attr(filing, "EndTravelDate")
+    DateReceived <- xml_attr(filing, "DateReceived")
+    TransactionDate <- xml_attr(filing, "TransactionDate")
+    Pages <- xml_attr(filing, "Pages")
+    ReportTitle <- xml_attr(xml_find_first(filing, ".//dbo.Reports"), "ReportTitle")
+    DocURL <- xml_attr(xml_find_first(filing, ".//dbo.Reports"), "DocURL")
+    report_data <- c(LastName, FirstName, OfficeName, ReportTitle, ReportingYear, BeginTravelDate, EndTravelDate, DateReceived, TransactionDate, Pages, DocURL)
+    traveler_filings <- rbind(traveler_filings, report_data)
+  }
+  traveler_filings <- setNames(traveler_filings, c("filer_lastname", "filer_firstname", "filer_office", "report_title", "reporting_year", "begin_travel_date", "end_travel_date", "date_received", "transaction_date", "num_pages", "doc_url")) %>% 
+    mutate(begin_travel_date = as.Date(begin_travel_date,  "%m/%d/%Y")) %>% 
+    mutate(end_travel_date = as.Date(end_travel_date,  "%m/%d/%Y")) %>% 
+    mutate(date_received = as.Date(date_received,  "%m/%d/%Y")) %>% 
+    mutate(transaction_date = as.Date(transaction_date,  "%m/%d/%Y")) %>% 
+    mutate(num_pages = as.double(num_pages)) %>% 
+    mutate(reporting_year = as.double(reporting_year))
+}
+
+# Download wayback archive zip files and convert to XML
+download_wayback <- function(wayback_number) {
+  date <- wayback_dataframe$date[wayback_number]
+  link <- wayback_dataframe$urls[wayback_number]
+  wayback_response <- GET(link)
+  if (wayback_response$status_code == 200) {
+  # Parse the HTML content
+    zip_loc <- paste0("data/senate_data_archives/senate_data_", date, ".zip") 
+    download.file(link, zip_loc)
+    # Create a filepath for the XML and unzip the file into the data folder
+    xml_loc <- gsub(".zip", ".xml", zip_loc) 
+    unzip(zip_loc, exdir = "data/senate_data_archives")
+    #Rename the unzipped file to follow project convention
+    file.rename("data/senate_data_archives/giftrule.xml", xml_loc)
+    file.rename("data/senate_data_archives/GiftRuleData.xml", xml_loc)
+} else {
+    # Handle errors
+    cat("Error: Unable to fetch the Wayback Machine URL\n")
+}
+}
+
+# JUST for the first XML, which has a different format
+xml_one_to_table <- function(file_number) {
+  xml_listing <- all_listings[[file_number]]
+    LastName = xml_attr(xml_listing, "LastName")
+    FirstName = xml_attr(xml_listing, "FirstName")
+    OfficeName = xml_attr(xml_listing, "OfficeName")
+    all_filings <- xml_find_all(xml_listing, ".//Document")
+  traveler_filings <- data.frame()
+  #For each filing, extract information and put it in a dataframe
+  for(filing_num in 1:length(all_filings)) {
+    filing <- all_filings[[filing_num]]
+    ReportingYear <- xml_attr(filing, "ReportingYear")
+    BeginTravelDate <- xml_attr(filing, "BeginTravelDate")
+    EndTravelDate <- xml_attr(filing, "EndTravelDate")
+    DateReceived <- xml_attr(filing, "DateReceived")
+    TransactionDate <- xml_attr(filing, "TransactionDate")
+    Pages <- xml_attr(filing, "Pages")
+    ReportTitle <- xml_attr(filing, "FilingType")
+    DocURL <- NA
+    report_data <- c(LastName, FirstName, OfficeName, ReportTitle, ReportingYear, BeginTravelDate, EndTravelDate, DateReceived, TransactionDate, Pages, DocURL)
+    traveler_filings <- rbind(traveler_filings, report_data)
+  }
+  traveler_filings <- setNames(traveler_filings, c("filer_lastname", "filer_firstname", "filer_office", "report_title", "reporting_year", "begin_travel_date", "end_travel_date", "date_received", "transaction_date", "num_pages", "doc_url")) %>% 
+    mutate(begin_travel_date = as.Date(begin_travel_date)) %>% 
+    mutate(end_travel_date = as.Date(end_travel_date)) %>% 
+    mutate(date_received = as.Date(date_received)) %>% 
+    mutate(transaction_date = as.Date(transaction_date)) %>% 
+    mutate(num_pages = as.double(num_pages)) %>% 
+    mutate(reporting_year = as.double(reporting_year))
+}
+
+download_file_with_retry <- function(url, destination, max_attempts = 10) {
+  tryCatch(
+    {
+      download.file(url, destination, mode = "wb")
+      message("File downloaded successfully!")
+    },
+    error = function(e) {
+      if (max_attempts > 0) {
+        message("Error occurred:", e)
+        message("Retrying download...")
+        Sys.sleep(5)  # Wait for 5 seconds before retrying
+        download_file_with_retry(url, destination, max_attempts - 1)
+      } else {
+        message("Max attempts reached. Download failed.")
+      }
+    }
+  )
+}
+
+retrieve_pdfs <- function(wayback_number) {
+  link <- clean_links$original[wayback_number]
+  file_name <- clean_links$file_name[wayback_number]
+  timestamp <- clean_links$timestamp[wayback_number]
+  full_link <- paste0("https://web.archive.org/web/", timestamp, "/", link)
+  wayback_response <- GET(full_link)
+  if (wayback_response$status_code == 200) {
+    Sys.sleep(1)
+  # Parse the HTML content
+    pdf_loc <- paste0("file_download_local/", file_name) 
+    download_file_with_retry(full_link, pdf_loc)
+    # Create a filepath for the XML and unzip the file into the data folder
+} else {
+    # Handle errors
+    cat("Error: Unable to fetch the Wayback Machine URL\n")
+}
+} 
+
+retrieve_pdfs_second <- function(wayback_number) {
+  link <- not_downloaded$original[wayback_number]
+  file_name <- not_downloaded$file_name[wayback_number]
+  timestamp <- not_downloaded$timestamp[wayback_number]
+  full_link <- paste0("https://web.archive.org/web/", timestamp, "/", link)
+  wayback_response <- GET(full_link)
+  if (wayback_response$status_code == 200) {
+    Sys.sleep(1)
+  # Parse the HTML content
+    pdf_loc <- paste0("file_download_local/", file_name) 
+    download_file_with_retry(full_link, pdf_loc)
+    # Create a filepath for the XML and unzip the file into the data folder
+} else {
+    # Handle errors
+    cat("Error: Unable to fetch the Wayback Machine URL\n")
+}
+} 
+
+```
+
+# Downloads archives from about every four years of the senate data
+
+```{r}
+# Example URL for the oldest available snapshot
+wayback_urls <- c("https://web.archive.org/web/20080131052758/http://soprweb.senate.gov/giftrule/giftruledownload/GiftRuleData.zip", "https://web.archive.org/web/20110605144411/http://soprweb.senate.gov/giftrule/giftruledownload/giftruledata.zip", "https://web.archive.org/web/20150318055851/http://soprweb.senate.gov/giftrule/giftruledownload/giftruledata.zip", "https://web.archive.org/web/20190310121622/http://soprweb.senate.gov/giftrule/giftruledownload/giftruledata.zip", "https://web.archive.org/web/20230302004112/https://giftrule-disclosure.senate.gov/media/giftruledownloads/giftruledata.zip", "https://web.archive.org/web/20130512083149/http://soprweb.senate.gov/giftrule/giftruledownload/GiftRuleData.zip", "https://web.archive.org/web/20201007080021/https://giftrule-disclosure.senate.gov/media/giftruledownloads/giftruledata.zip")
+
+wayback_dataframe <- data.frame(urls = unlist(wayback_urls))
+
+wayback_dataframe <- wayback_dataframe |>
+  mutate(date_time = gsub("[^0-9]", "", urls)) %>% 
+  mutate(parsed_dt = strptime(date_time, format = "%Y%m%d%H%M%S")) %>% 
+  mutate(date = as.Date(parsed_dt))
+
+for (number in 1:nrow(wayback_dataframe)) {
+  download_wayback(number)
+}
+
+```
+
+# Creates CSVs from XMLs of archived data
+
+```{r}
+all_xml <- as_tibble(list.files("data/senate_data_archives")) %>% 
+  filter(str_detect(value, "xml")) %>% 
+  mutate(date = ymd(str_extract(value, "\\d{4}-\\d{2}-\\d{2}")))
+
+```
+
+# XML One
+```{r}
+xml_loc <- paste0("data/senate_data_archives/", all_xml$value[1])
+xml_date <- all_xml$date[1]
+char_date <- as.character(xml_date)
+current_data <- read_xml(xml_loc)
+#Create a list of all the filers and their documents
+all_listings <- xml_find_all(current_data, ".//Filer")
+
+  # Speedy for loop to get all the information
+filer_travel <- map_dfr(c(1:length(all_listings)), xml_one_to_table) %>% 
+  mutate(source = xml_date)
+  
+csv_loc <- gsub(".xml", ".csv", xml_loc)
+write_csv(filer_travel, csv_loc)
+```
+
+# XML Two
+
+``` {r}
+xml_loc <- paste0("data/senate_data_archives/", all_xml$value[2])
+xml_date <- all_xml$date[2]
+char_date <- as.character(xml_date)
+current_data <- read_xml(xml_loc)
+#Create a list of all the filers and their documents
+all_listings <- xml_find_all(current_data, ".//dbo.filer")
+
+  # Speedy for loop to get all the information
+filer_travel <- map_dfr(c(1:length(all_listings)), xml_two_to_table) %>% 
+  mutate(source = xml_date)
+  
+csv_loc <- gsub(".xml", ".csv", xml_loc)
+write_csv(filer_travel, csv_loc)
+
+```
+
+# All the other XMLs
+
+``` {r}
+for (xml in 3:nrow(all_xml)) {
+xml_loc <- paste0("data/senate_data_archives/", all_xml$value[xml])
+xml_date <- all_xml$date[xml]
+char_date <- as.character(xml_date)
+current_data <- read_xml(xml_loc)
+#Create a list of all the filers and their documents
+all_listings <- xml_find_all(current_data, ".//dbo.filer")
+
+  # Speedy for loop to get all the information
+filer_travel <- map_dfr(c(1:length(all_listings)), xml_to_table) %>% 
+  mutate(source = xml_date)
+  
+csv_loc <- gsub(".xml", ".csv", xml_loc)
+write_csv(filer_travel, csv_loc)
+}
+```
+
+# Upload data from most recent old data and create a list of all filings, including a column that shows what dataset the row came from
+```{r}
+# List all files in the original data folder
+all_files <- as.tibble(list.files("data/senate_data_archives/")) %>% 
+  mutate(date = ymd(str_extract(value, "\\d{4}-\\d{2}-\\d{2}"))) %>% 
+  filter(str_detect(value, "csv"))
+
+today_date <- Sys.Date()
+
+all_new_files <- as_tibble(list.files("data/combined_data")) %>% 
+  mutate(date = ymd(str_extract(value, "\\d{4}-\\d{2}-\\d{2}"))) %>% 
+  filter(!date == today_date) %>% 
+  filter(date == max(date) & str_detect(value, "csv"))
+
+most_recent_csv <- paste0("data/combined_data/", as.character(all_new_files$value[1]))
+
+current_combined <- read_csv(most_recent_csv)
+
+new_csv <- paste0("data/combined_data/senate_data_", today_date, ".csv")
+
+archive_added <- current_combined
+
+#file <- 1
+for (file in 1:nrow(all_files)) {
+  csv_name <- paste0("data/senate_data_archives/", as.character(all_files$value[file]))
+  csv_temp <- read_csv(csv_name)
+  archive_added <- archive_added %>% 
+    bind_rows(csv_temp)
+}
+
+archive_2016 <- archive_added %>% 
+  filter(reporting_year == 2016) %>% 
+  arrange(desc(source)) %>% 
+  distinct(filer_lastname, filer_firstname, report_title, reporting_year, begin_travel_date, end_travel_date, date_received, transaction_date, num_pages, .keep_all = TRUE) %>% 
+  filter(!is.na(doc_url))
+
+archive_all <- archive_added %>% 
+  filter(reporting_year != 2016) %>% 
+  distinct(., filer_lastname, filer_firstname, filer_office, report_title, reporting_year, begin_travel_date, end_travel_date, date_received, transaction_date, num_pages, .keep_all = TRUE)
+
+#for (file in 1:nrow(all_files)) {
+#  csv_name <- paste0("data/senate_data_archives/", as.character(all_files$value[file]))
+#  csv_temp <- read_csv(csv_name)
+#  archive_added <- archive_added %>% 
+#    full_join(csv_temp, by = c("filer_lastname", "filer_firstname", "filer_office", "report_title", "reporting_year", "begin_travel_date", "end_travel_date", "date_received", "transaction_date", "num_pages")) %>% 
+#    mutate(source = case_when(
+#      is.na(source.x) ~ source.y,
+#      TRUE~ source.x
+#      )) %>% 
+#    select(-source.x, -source.y) %>% 
+#    mutate(doc_url = case_when(
+#      is.na(doc_url.x) ~ doc_url.y,
+#      TRUE ~ doc_url.x
+#      )) %>% 
+#    select(-doc_url.x, -doc_url.y)
+#}
+
+write_csv(archive_added, new_csv)
+
+# Get the file path for the most recent csv
+#most_recent_csv <- paste0("/workspaces/congressional-private-travel/data/combined_data/", as.character(all_files[1]))
+```
+
+# Download the 2016 Internet Archive Files
+## Join the IA list with the list we have
+```{r}
+clean_propub_full <- read_csv("data/senate_data_with_propublica/clean_propub_senate_2023-12-26.csv")
+
+propub_2016 <- clean_propub_full %>% 
+  filter(str_detect(reporting_year, "2016"))
+
+# JSON file of all links following the URL pattern "https://giftrule-disclosure.senate.gov/media/2016/"
+wayback_2016_link <- as_tibble(fromJSON("https://web.archive.org/web/timemap/json?url=https%3A%2F%2Fgiftrule-disclosure.senate.gov%2Fmedia%2F2016%2F&matchType=prefix&collapse=urlkey&output=json&fl=original%2Cmimetype%2Ctimestamp%2Cendtimestamp%2Cgroupcount%2Cuniqcount&filter=!statuscode%3A%5B45%5D..&limit=10000&_=1703797395430"))
+colnames(wayback_2016_link) <- unlist(wayback_2016_link[1, ])
+
+# Clean links and join with those that already have a doc_url
+clean_links <- wayback_2016_link %>% 
+  filter(str_detect(mimetype, "pdf")) %>% 
+  mutate(file_name = str_extract(original, "(?<=/)[^/]+\\.pdf")) %>% 
+  left_join(propub_2016, by = "file_name")
+
+# Manually check the remaining documents from the archive list
+no_match <- clean_links %>% 
+  filter(is.na(filer_lastname)) %>% 
+  select(original:file_name)
+
+#https://giftrule-disclosure.senate.gov/media/2016/PvEW0WdBzkm5mHG6IMGbfQ.pdf is a weird case, can't find a match
+
+# Update the senate data with file names and URLs accordingly
+propub_2016_manual <- propub_2016 %>% 
+  mutate(file_name = case_when(
+    filer_lastname == "WROE" & num_pages == 7 ~ "118by4OJF0JJjKnQk1NvA.pdf",
+    filer_lastname == "DELANEY" & num_pages == 30 ~ "16u8Cntqz0GXLP85WMJRGw.pdf",
+    filer_lastname == "COUGHLAN" & num_pages == 7 & transaction_date == ymd("2016-10-12") ~ "2bA7SMoZOUWKQ6nuPPJTuQ.pdf",
+    filer_lastname == "NEAL" & num_pages == 13 ~ "5N5VWesE7MVdmJnB6Ow.pdf",
+    filer_lastname == "STAMPS" & num_pages == 4 ~ "KWmTawu3kqlLngZNQyNYA.pdf",
+    filer_lastname == "THELMAN" & num_pages == 3 ~ "QPrglnZ4gUCzMmiugInCRg.pdf",
+    filer_lastname == "POLESOVSKY" & num_pages == 2 ~ "rP3U55cPXUKrggupLA6G6g.pdf",
+    filer_lastname == "KLEIN" & num_pages == 3 ~ "sCq0429jpUiGDxPG13xq4g.pdf",
+    filer_lastname == "ATKINSON" & num_pages == 5 ~ "WED93tphEOyNWexB9DQ.pdf",
+    filer_lastname == "FREEDMAN" & num_pages == 5 ~ "yEuDz9hbESi5vK5Yk6Qg.pdf",
+    filer_lastname == "DUNCAN" & num_pages == 14 & date_received == ymd("2016-11-18") ~ "YTAAQXpU8kC1uMXSuhxwMA.pdf",
+    TRUE ~ file_name
+  )) %>% 
+  mutate(doc_url = case_when(
+    filer_lastname == "WROE" & num_pages == 7 ~ "	
+https://giftrule-disclosure.senate.gov/media/2016/118by4OJF0JJjKnQk1NvA.pdf",
+    filer_lastname == "DELANEY" & num_pages == 30 ~ "	
+https://giftrule-disclosure.senate.gov/media/2016/16u8Cntqz0GXLP85WMJRGw.pdf",
+    filer_lastname == "COUGHLAN" & num_pages == 7 & transaction_date == ymd("2016-10-12") ~ "	
+https://giftrule-disclosure.senate.gov/media/2016/2bA7SMoZOUWKQ6nuPPJTuQ.pdf",
+    filer_lastname == "NEAL" & num_pages == 13 ~ "	
+https://giftrule-disclosure.senate.gov/media/2016/5N5VWesE7MVdmJnB6Ow.pdf",
+    filer_lastname == "STAMPS" & num_pages == 4 ~ "	
+https://giftrule-disclosure.senate.gov/media/2016/KWmTawu3kqlLngZNQyNYA.pdf",
+    filer_lastname == "THELMAN" & num_pages == 3 ~ "	
+https://giftrule-disclosure.senate.gov/media/2016/QPrglnZ4gUCzMmiugInCRg.pdf",
+    filer_lastname == "POLESOVSKY" & num_pages == 2 ~ "	
+https://giftrule-disclosure.senate.gov/media/2016/rP3U55cPXUKrggupLA6G6g.pdf",
+    filer_lastname == "KLEIN" & num_pages == 3 ~ "	
+https://giftrule-disclosure.senate.gov/media/2016/sCq0429jpUiGDxPG13xq4g.pdf",
+    filer_lastname == "ATKINSON" & num_pages == 5 ~ "	
+https://giftrule-disclosure.senate.gov/media/2016/WED93tphEOyNWexB9DQ.pdf",
+    filer_lastname == "FREEDMAN" & num_pages == 5 ~ "	
+https://giftrule-disclosure.senate.gov/media/2016/yEuDz9hbESi5vK5Yk6Qg.pdf",
+    filer_lastname == "DUNCAN" & num_pages == 14 & date_received == ymd("2016-11-18") ~ "	
+https://giftrule-disclosure.senate.gov/media/2016/YTAAQXpU8kC1uMXSuhxwMA.pdf",
+    TRUE ~ file_name
+  ))
+
+# Anti and then rbind to get an updated full list
+clean_propub_senate_new <- clean_propub_full %>% 
+  anti_join(propub_2016_manual, by = c("filer_lastname", "filer_firstname", "filer_office", "report_title", "reporting_year", "begin_travel_date", "end_travel_date", "date_received", "transaction_date", "num_pages")) %>% 
+  rbind(propub_2016_manual)
+
+write_csv(clean_propub_senate_new, "data/senate_data_with_propublica/clean_propub_senate_2023-12-31.csv")
+
+```
+
+
+## Downloading all 2016 documents from wayback archive
+```{r}
+for (number in 1:nrow(clean_links)) {
+  retrieve_pdfs(number)
+  Sys.sleep(1)
+}
+
+all_downloaded <- as_tibble(list.files("file_download_local/"))
+
+not_downloaded <- clean_links %>% 
+  anti_join(all_downloaded, by = c("file_name" = "value"))
+
+for (number in 1:nrow(not_downloaded)) {
+  retrieve_pdfs_second(number)
+  Sys.sleep(1)
+}
+```
+
+```{r}
+wayback_2017_link <- as_tibble(fromJSON("https://web.archive.org/web/timemap/json?url=https%3A%2F%2Fgiftrule-disclosure.senate.gov%2Fmedia%2F2017%2F&matchType=prefix&collapse=urlkey&output=json&fl=original%2Cmimetype%2Ctimestamp%2Cendtimestamp%2Cgroupcount%2Cuniqcount&filter=!statuscode%3A%5B45%5D..&limit=10000&_=1703797395430"))
+colnames(wayback_2017_link) <- unlist(wayback_2017_link[1, ])
+
+# Clean links and join with those that already have a doc_url
+clean_links <- wayback_2017_link %>% 
+  filter(str_detect(mimetype, "pdf")) %>% 
+  mutate(file_name = str_extract(original, "(?<=/)[^/]+\\.pdf")) 
+
+for (number in 1:nrow(clean_links)) {
+  retrieve_pdfs(number)
+  Sys.sleep(1)
+}
+
+all_downloaded <- as_tibble(list.files("file_download_local/"))
+
+not_downloaded <- clean_links %>% 
+  anti_join(all_downloaded, by = c("file_name" = "value"))
+
+for (number in 1:nrow(not_downloaded)) {
+  retrieve_pdfs_second(number)
+  Sys.sleep(1)
+}
+```
+

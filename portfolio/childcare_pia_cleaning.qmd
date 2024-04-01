@@ -1,0 +1,79 @@
+---
+title: MSDE Childcare PIA Data Analysis and Cleaning
+date: 15 February 2023
+author: Khushboo Rathore
+---
+
+```{r}
+library(tidyverse)
+library(googlesheets4)
+library(janitor)
+
+```
+
+# 24 Jurisdiction Spreadsheets
+```{r}
+excels_data_2024 <- read_csv("data/md_excels_112024.csv") %>% 
+  clean_names()
+
+split_df <- split(excels_data_2024, excels_data_2024$county)
+
+for (n in 1:length(split_df)) {
+  county_data = data.frame(split_df[n])
+  write_sheet(county_data, ss = "https://docs.google.com/spreadsheets/d/1wjV3FZNaohD2nkxN3zeQUGOOyhU1zgRxQLsf4rhqbuM/edit#gid=93603666")
+}
+  
+
+```
+# Count by County Spreadsheet
+
+## Pull in all county data
+```{r}
+count_2020 <- read_sheet("https://docs.google.com/spreadsheets/d/1kpQf4LOUCpGDOVGAliTvAoGN1NTCp4BX4myzJaZ3TVE/edit#gid=406479639", sheet = "2020_county")
+count_2021 <- read_sheet("https://docs.google.com/spreadsheets/d/1kpQf4LOUCpGDOVGAliTvAoGN1NTCp4BX4myzJaZ3TVE/edit#gid=406479639", sheet = "2021_county")
+count_2022 <- read_sheet("https://docs.google.com/spreadsheets/d/1kpQf4LOUCpGDOVGAliTvAoGN1NTCp4BX4myzJaZ3TVE/edit#gid=406479639", sheet = "2022_county")
+count_2023 <- read_sheet("https://docs.google.com/spreadsheets/d/1kpQf4LOUCpGDOVGAliTvAoGN1NTCp4BX4myzJaZ3TVE/edit#gid=406479639", sheet = "2023_county")
+count_2024 <- read_sheet("https://docs.google.com/spreadsheets/d/1kpQf4LOUCpGDOVGAliTvAoGN1NTCp4BX4myzJaZ3TVE/edit#gid=406479639", sheet = "2024_county")
+```
+
+# Clean and Join County Data
+```{r}
+count_2020_clean <- count_2020 |>
+  clean_names() %>% 
+  rename(providers_2020 = number_of_child_care_providers) %>% 
+  filter(!is.na(county))
+
+count_2021_clean <- count_2021 |>
+  clean_names() %>% 
+  rename(providers_2021 = number_of_child_care_providers) %>% 
+  filter(!is.na(county))
+
+count_2022_clean <- count_2022 |>
+  clean_names() %>% 
+  rename(providers_2022 = number_of_child_care_providers) %>% 
+  filter(!is.na(county))
+  
+count_2023_clean <- count_2023 |>
+  clean_names() %>% 
+  rename(providers_2023 = number_of_child_care_providers) %>% 
+  filter(!is.na(county))
+
+count_2024_clean <- count_2024 |>
+  clean_names() %>% 
+  rename(providers_2024 = number_of_child_care_providers) %>% 
+  filter(!is.na(county))
+
+all_years_county <- count_2020_clean %>% 
+  inner_join(count_2021_clean) %>% 
+  inner_join(count_2022_clean) %>% 
+  inner_join(count_2023_clean) %>% 
+  inner_join(count_2024_clean)
+
+write_sheet(all_years_county, "https://docs.google.com/spreadsheets/d/1wjV3FZNaohD2nkxN3zeQUGOOyhU1zgRxQLsf4rhqbuM/edit#gid=0", sheet = "all_years_county")
+```
+
+# Count by City Spreadsheet
+```{r}
+
+```
+
