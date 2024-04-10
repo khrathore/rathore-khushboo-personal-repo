@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line chart</title>
+    <!--Chart.js JS CDN--> 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+  <body>
+
+    <!-- add this container and style to stylesheet to resize the graphic-->
+    <div class="chartContainer">
+        <h1>Americans, Chinese, use their minutes similarly</h1>
+        <p class="subtitle">
+            After removing time spend sleeping and working for pay, people in China and
+            people in America spend their days doing similar tasks. Data indicates that the average
+            person in these countries spent over 100 minutes a day on television and radio
+            entertainment. The key divergences are in eating and drinking, which China spends
+            a half-hour more on and unpaid work or volunteering, which America spends a half-hour
+            more doing.
+        </p>
+      <canvas id="myChart"></canvas>
+      <div class="source">Source: Our World in Data</div>
+    </div>
+
+<script src="javascript.js"></script>
+
+  </body>
+</html>
