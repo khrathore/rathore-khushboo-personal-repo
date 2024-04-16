@@ -72,8 +72,26 @@ all_years_county <- count_2020_clean %>%
 write_sheet(all_years_county, "https://docs.google.com/spreadsheets/d/1wjV3FZNaohD2nkxN3zeQUGOOyhU1zgRxQLsf4rhqbuM/edit#gid=0", sheet = "all_years_county")
 ```
 
-# Count by City Spreadsheet
+# Active vs Defunct Providers
 ```{r}
+excels_data_2024 <- read_csv("data/md_excels_112024.csv") %>% 
+  clean_names()
 
+defunct_active <- read_csv("data/nov20_oct23.csv") %>% 
+  clean_names() %>% 
+  mutate(provider_license_number = as.character(provider_license_number))
+
+active <- excels_data_2024 %>% 
+  left_join(defunct_active, by = c("license_number" = "provider_license_number")) %>% 
+  select(provider_email_address)
+
+defunct <- defunct_active %>% 
+  anti_join(excels_data_2024, by = c("provider_license_number" = "license_number")) %>% 
+  select(provider_email_address)
+
+write_sheet(active, "https://docs.google.com/spreadsheets/d/1wjV3FZNaohD2nkxN3zeQUGOOyhU1zgRxQLsf4rhqbuM/edit#gid=0", sheet = "active_emails")
+
+write_sheet(defunct, "https://docs.google.com/spreadsheets/d/1wjV3FZNaohD2nkxN3zeQUGOOyhU1zgRxQLsf4rhqbuM/edit#gid=0", sheet = "defunct_emails")
 ```
+
 
