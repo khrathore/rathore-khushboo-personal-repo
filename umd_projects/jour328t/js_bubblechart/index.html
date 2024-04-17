@@ -4,7 +4,7 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Line chart</title>
+    <title>Bubble Chart</title>
     <!--Chart.js JS CDN--> 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
@@ -14,16 +14,16 @@
 
     <!-- add this container and style to stylesheet to resize the graphic-->
     <div class="chartContainer">
-        <h1>Money can't buy happiness, but it may buy time</h1>
+        <h1>Longer might mean better when it comes to books</h1>
         <p class="subtitle">
-            Of the nine most populus countries, those with a higher Gross Domestic Product tended to have
-            much higher life expectancies than their counterparts. The countries with the highest GDP were
-            the United States, with an expectancy of 77 years and Japan, with an expectancy of 81 years. On
-            the opposite side, Bangladesh and India had the lowest GDPs with life expectancies of 66 and 61 
-            years respectively.
+            Overall, books on the 'New York Times' best books list that had more pages tended to have better ratings than their short counterparts. However, many
+            of these books also had fewer ratings because of their length. To quantify the number of ratings, I adjusted by using a logarithmic scale since there
+            were some numbers that caused significant skewing of the data. This scale adjusted the data so that it made more sense and was a more logical comparison.
+            Across all books from 1997 to 2017, 'Grant' by Ron Chernow had the highest rating (4.6/5) and had 1106 pages. It was only rated by 569 people. The overall
+            best performing book was 11/22/63, by Stephen King. The book had a rating of 4.3/5, 849 pages and nearly 300,000 ratings.
         </p>
       <canvas id="myChart"></canvas>
-      <div class="source">Source: Tanyoung Kim’s Best Book Shelfr</div>
+      <div class="source">Source: Tanyoung Kim’s Best Book Shelf</div>
     </div>
 
 <script src="javascript.js"></script>
