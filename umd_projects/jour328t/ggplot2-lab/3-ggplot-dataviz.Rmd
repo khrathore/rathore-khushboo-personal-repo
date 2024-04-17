@@ -1,0 +1,269 @@
+---
+title: "GGPlot for Data Visualization"
+author: "Adam Marton" 
+---
+
+
+
+#### Install new packages
+
+```{r}
+install.packages("treemapify")
+install.packages("RColorBrewer")
+install.packages('svglite')
+```
+
+
+#### Load packages
+```{r}
+library(tidyverse)
+library(scales)
+library(treemapify)
+library(RColorBrewer)
+library(svglite)
+library(tidyverse)
+library(janitor)
+
+```
+
+
+#### Load Spotify data csv
+```{r}
+spotify_data <- read.csv("Most_Streamed_Spotify _Songs_2023.csv")
+```
+
+We'll start by getting our data ready.
+```{r}
+spotify_bar_chart_data <- spotify_data %>% top_n(10, streams)
+```
+
+Let's make the chart and order it by number of streams
+```{r}
+spotify_bar_chart_data %>% ggplot(aes(x = reorder(track_name,desc(streams)), y = streams)) +
+  geom_col()
+```
+
+Next, fix the tick labels
+- Set y axis to display in billions
+- Set x on angle
+
+```{r}
+spotify_bar_chart_data %>% ggplot(aes(x = reorder(track_name,desc(streams)), y = streams)) +
+  geom_col()+
+  scale_y_continuous(labels = scales::label_number(scale = 1e-9, suffix = "B")) +
+  scale_x_discrete(guide = guide_axis(angle = 45))
+```
+Add some design elements 
+- Make the bars dark green
+- Add text
+- Add a theme (minimal)
+- hide the axis labels
+
+```{r}
+spotify_bar_chart_data %>% ggplot(aes(x = reorder(track_name,desc(streams)), y = streams)) +
+  geom_col(fill="darkgreen")+
+  scale_y_continuous(labels = scales::label_number(scale = 1e-9, suffix = "B")) +
+  scale_x_discrete(guide = guide_axis(angle = 45)) +
+  labs(title = "Top Spotify Tracks of 2023", subtitle = "The Weekend's Blinding Lights takes the top spot with over 3 billion streams.", caption = "Source: Spotify via Kaggle \n by Adam Marton")+
+  theme_minimal()+
+  theme(axis.title = element_blank())
+
+```
+
+
+
+Next, let's make a scatterplot based on a few values. I was curious if energy and danceability are related. Are they? 
+
+```{r}
+  ggplot(spotify_data, aes(danceability_., energy_.)) +
+    geom_point()
+
+```
+
+Let's add in color based on the key column
+
+```{r}
+  ggplot(spotify_data, aes(danceability_., energy_., color = key)) +
+    geom_point()
+```
+
+
+Let's encode another variable -- speechiness -- by size. And we will make the dots a little transparent and use RColorBrewer to choose our own colors
+
+More on RColorBrewer: https://r-graph-gallery.com/38-rcolorbrewers-palettes.html
+```{r}
+  ggplot(spotify_data, aes(danceability_., energy_., color = key)) +
+    geom_point(alpha = .5, aes(size = speechiness_.))+
+    theme_minimal() +
+    scale_color_brewer(palette="Paired")
+```
+
+
+Add text and clean up labels (axis and legend labels)
+```{r}
+  ggplot(spotify_data, aes(danceability_., energy_., color = key)) +
+    geom_point(alpha = .5, aes(size = speechiness_.))+
+    theme_minimal() +
+    scale_color_brewer(palette="Paired") +
+   labs(title = "Are energy and danceability related?", subtitle = "Examining the top Spotify songs of 2023", caption = "Source: Spotify via Kaggle \n by Adam Marton", x = "Danceability", y = "Energy", size = "Speechiness", color = "Key")
+```
+
+
+
+Use facet wrap to make it into small multiples
+```{r}
+  ggplot(spotify_data, aes(danceability_., energy_., color = key)) +
+    geom_point(alpha = .5, aes(size = speechiness_.))+
+    theme_minimal() +
+    scale_color_brewer(palette="Paired") +
+   labs(title = "Are energy and danceability related?", subtitle = "Examining the top Spotify songs of 2023", caption = "Source: Spotify via Kaggle \n by Adam Marton", x = "Danceability", y = "Energy", size = "Speechiness", color = "Key") +
+  facet_wrap(~key)
+```
+
+
+
+
+
+Let's prep our data for making an area chart by creating a pivot table for year
+```{r}
+spotify_area_data <- spotify_data %>% 
+  group_by(released_year) %>%
+  summarize(count_by_year = n())
+```
+
+
+Let's make an area chart to see the spread of when songs were released
+```{r}
+ggplot(spotify_area_data, aes(x=released_year, y=count_by_year)) +
+  geom_area(alpha = 0.5, fill="darkgreen")
+```
+Add headline and chatter and theme
+
+```{r}
+ggplot(spotify_area_data, aes(x=released_year, y=count_by_year)) +
+  geom_area(alpha = 0.5, fill="darkgreen") +
+  labs(title = "Most of Spotify's most popular songs of 2023 were recently released", subtitle = "Though songs go back as far as 1930", caption = "Source: Spotify via Kaggle \n by Adam Marton", x = "Year", y = "Count") +
+    theme_minimal() 
+```
+
+
+
+
+Let's prep our data for making a tree map by creating a pivot table for KEY
+```{r}
+spotify_tree_data <- spotify_data %>% 
+  group_by(key) %>%
+  summarize(count_by_key = n())
+```
+
+
+
+Now lets make a tree map showing songs by key
+Here is a guide to treemapify: https://r-charts.com/part-whole/treemapify/
+```{r}
+ggplot(spotify_tree_data, aes(area = count_by_key, fill = key)) +
+  geom_treemap() +
+      theme_minimal() +
+   labs(title = "Top Spotify songs by key", subtitle = "Examining the top Spotify songs of 2023", caption = "Source: Spotify via Kaggle \n by Adam Marton", color = "Key")
+```
+
+Add labels, theme, headline, custom colors
+```{r}
+ggplot(spotify_tree_data, aes(area = count_by_key, fill = key, label = count_by_key)) +
+  geom_treemap() +
+      theme_minimal() +
+   labs(title = "Top Spotify songs by key", subtitle = "Examining the top Spotify songs of 2023", caption = "Source: Spotify via Kaggle \n by Adam Marton", color = "Key")+
+  geom_treemap_text(colour = "white",
+                    place = "centre",
+                    size = 15)+
+    scale_fill_brewer(palette = "Paired")
+
+```
+
+
+EXPORT -- you can export your ggplot graphics to PNG or SVG
+```{r}
+
+spotify_tree_graph <- ggplot(spotify_tree_data, aes(area = count_by_key, fill = key, label = count_by_key)) +
+  geom_treemap() +
+      theme_minimal() +
+   labs(title = "Top Spotify songs by key", subtitle = "Examining the top Spotify songs of 2023", caption = "Source: Spotify via Kaggle \n by Adam Marton", color = "Key")+
+  geom_treemap_text(colour = "white",
+                    place = "centre",
+                    size = 15)+
+    scale_fill_brewer(palette = "Paired")
+
+spotify_tree_graph = ggsave(file="tree.svg")
+spotify_tree_graph = ggsave(file="tree.png")
+
+```
+
+
+
+
+Time to work on your own! Use the spotify data and the code we reviewed above to create the following three graphics:
+
+1.Make a bar chart of the top 10 tracks, similar to the chart we made above. Instead of the track name, show the artist name. Write new headline and chatter and change the color and theme. /OR/ Think of your own idea for a bar chart using the spotify data.
+
+```{r}
+topten <- spotify_data %>% 
+  arrange(desc(streams)) %>% 
+  head(10) %>% 
+  clean_names()
+
+ggplot(topten, aes(x = reorder(artist_s_name, desc(streams)), y = streams)) +
+  geom_col(fill = "lightblue", alpha = 1) +
+  scale_y_continuous(labels = scales::label_number(scale = 1e-9, suffix = "B")) +
+  scale_x_discrete(guide = guide_axis(angle = 45)) +
+  labs(title = "The Weekend tops the charts multiple times", subtitle = "He had two songs in the top 10 list of spotify streams in 2023, one a collaboration with Daft Punk. \nHalf the songs on the list were created by more than one artist; the other half were solo tracks.", caption = "Source: Spotify via Kaggle \n Graphic by Khushboo Rathore") +
+  theme_minimal() +
+  theme(axis.title = element_blank())
+                   
+
+```
+
+
+2. Make a scatterplot simiar to the chart we made above. Instead of energy and danceability, choose two different metrics from the data to compare. Write new text and update the colors and theme.
+
+```{r}
+  ggplot(spotify_data, aes(liveness_., valence_., color = key)) +
+    geom_point(alpha = .5, aes(size = acousticness_.))+
+    theme_minimal() +
+    scale_color_brewer(palette="Set3") +
+   labs(title = "Are liveness and valence related?", subtitle = "Examining the top Spotify songs of 2023", caption = "Source: Spotify via Kaggle \n by Khushboo Rathore", x = "Liveness", y = "Valence", size = "Acousticness", color = "Key")
+```
+
+
+3. Make another chart using this data, anything you like.
+
+```{r}
+month_impact <- spotify_data %>% 
+  group_by(released_month) %>% 
+  count() %>% 
+  mutate(month_name = case_when(
+    released_month == 1 ~ "January",
+    released_month == 2 ~ "February",
+    released_month == 3 ~ "March",
+    released_month == 4 ~ "April",
+    released_month == 5 ~ "May",
+    released_month == 6 ~ "June",
+    released_month == 7 ~ "July",
+    released_month == 8 ~ "August",
+    released_month == 9 ~ "September",
+    released_month == 10 ~ "October",
+    released_month == 11 ~ "November",
+    released_month == 12 ~ "December",
+  ))
+
+ggplot(month_impact, aes(area = n, fill = reorder(month_name, released_month) , label = n)) +
+  geom_treemap() +
+      theme_minimal() +
+   labs(title = "Top Spotify songs by month of release", subtitle = "Examining the top Spotify songs of 2023", caption = "Source: Spotify via Kaggle \n by Khushboo Rathore", fill = "Released Month") +
+  geom_treemap_text(colour = "black",
+                    place = "centre",
+                    size = 15)+
+    scale_fill_brewer(palette = "Set3")
+```
+
+
+When finished, save and submit this R Markdown file to ELMS.
