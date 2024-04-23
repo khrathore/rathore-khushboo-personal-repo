@@ -13,5 +13,56 @@ library(RColorBrewer)
 library(svglite)
 library(tidyverse)
 library(janitor)
+library(googlesheets4)
+```
+
+## Bob Ross Data Vis
+```{r}
+ross_tree <- read_sheet("https://docs.google.com/spreadsheets/d/1ayzIOMJMZWTKHtsWZ17CL1_fqXKXow222P3f1G9NYko/edit#gid=32964355", sheet = "color_count") %>% 
+  clean_names()
+
+ggplot(ross_tree, aes(area = count, fill = I(hex_code), label = color)) +
+  geom_treemap() +
+  theme_minimal() +
+  labs(title = "Bob Ross by the Numbers", subtitle = "During the 31 seasons of “The Joy of Painting,” Bob Ross painted with a variety of colors and shades. \nThe size of each block in this  visualization indicates how often the color was used. The most used \ncolors, other than various black paints and Titanium White, were Van Dyke Brown, Alizarin Crimson \nand Cadmium Yellow.", caption = "Source: Bob_Ross_Paintings repository created by 
+FelixAuer on GitHub. Design by Khushboo Rathore ", color = "Key")
+```
+
+## Childcare Facet Plot
+```{r}
+county_data <- read_csv("childcare_changes.csv") %>% 
+  clean_names() %>% 
+  pivot_longer(cols = allegany_county:baltimore_city) %>% 
+  mutate(name = str_to_title(gsub("_", " ", name)))
+
+county_data %>% ggplot(aes(x = year, y = value, color = name)) +
+  geom_line() +
+  scale_x_continuous(breaks = seq(2020, 2024, 4)) +
+  theme(strip.text = element_text(size = 6), panel.spacing.x = unit(2, "lines")) +
+  theme(legend.position = "none") +
+  facet_wrap(vars(name), ncol = 5) +
+  labs(title = "Across Maryland, childcare choices have narrowed for parents.", subtitle = "In every Maryland county but Somerset and Dorchester, the number of childcare facilities \navailable to parents has decreased since 2020. These changes are most visible in larger counties, \nlike Montgomery, Baltimore and Prince George's County, where numbers have decreased by at \nleast 100 since before the pandemic.", caption = "Source: Maryland State Department of Education \nData is a snapshot of January 1 of that year. Khushboo Rathore ", color = "Key")
 
 ```
+
+## Spotify Bubble Chart
+
+```{r}
+spotify_data <- read_csv("spotify_bilclub.csv") %>% 
+  clean_names() %>% 
+  mutate(released_decade = factor(released_decade))
+
+label_billions <- function() {
+  function(x) {
+    paste0(format(round(x / 1e9, 1), nsmall = 1), " billion")
+  }
+}
+
+  ggplot(spotify_data, aes(positivity_percent, danceability_percent, color = released_decade)) +
+    geom_point(alpha = .5, aes(size = streams)) +
+    scale_size_continuous(labels = label_billions()) +
+    theme_minimal() +
+    scale_color_brewer(palette="Dark2") +
+   labs(title = "In songs streamed over 1 billion times on Spotify in 2023, \nthe 2010s come out strong.", subtitle = "Of 152 songs that met the mark, nearly half of them were songs released between \n2010 and 2019. Songs that were more positive and \"danceable\", tended to have \nmore streams. A significant exception was \"Blinding Lights,\" by The Weeknd, \nwhich topped the streaming numbers despite being average in both these categories.", caption = "Source: Spotify via Kaggle \n by Khushboo Rathore", x = "Danceability", y = "Positivty (Valence)", size = "Streams", color = "Key")
+```
+
