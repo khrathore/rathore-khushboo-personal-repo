@@ -1,0 +1,17 @@
+---
+title: "GGPlot Data Visualization Assignment"
+author: "Khushboo Rathore" 
+---
+
+
+#### Load packages
+```{r}
+library(tidyverse)
+library(scales)
+library(treemapify)
+library(RColorBrewer)
+library(svglite)
+library(tidyverse)
+library(janitor)
+
+```
