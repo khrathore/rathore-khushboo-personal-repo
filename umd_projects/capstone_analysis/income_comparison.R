@@ -20,7 +20,11 @@ all_counties <- all_income %>%
 state_employee_clean <- state_employee %>% 
   clean_names() %>% 
   select(total_salary_paid, fiscal_year, place_of_residence, base_salary) %>% 
-  mutate(name = str_to_sentence(place_of_residence)) %>% 
+  mutate(name = str_to_title(place_of_residence)) %>% 
+  mutate(name = case_when(
+    str_detect(name, "brien") ~ "O'Brien",
+    TRUE ~ name
+  )) %>% 
   inner_join(all_counties, by = "name") %>%
   mutate(base_salary = as.double(gsub("[^0-9.]", "", base_salary))) %>%
   mutate(base_salary = case_when(
@@ -43,10 +47,14 @@ state_employee_clean <- state_employee %>%
 
 employee_overall <- all_income_clean %>% 
   full_join(state_employee_clean, by = c("name", "year")) %>% 
-  mutate(mean_diff = value - mean_salary_employee) %>% 
-  mutate(median_diff = value - median_salary_employee) %>% 
+  mutate(median_diff = median_salary_employee - value) %>% 
   left_join(all_counties, by = "name")
 
+employee_yearpivot <- employee_overall %>% 
+  select(name, year, geography_id, median_diff) %>% 
+  pivot_wider(names_from = year, values_from = median_diff)
+
 write_csv(employee_overall, "employment_comparison.csv")
+write_csv(employee_yearpivot, "income_pivot.csv")
   
   
