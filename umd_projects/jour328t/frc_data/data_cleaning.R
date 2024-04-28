@@ -11,3 +11,6 @@ dead_teams <- all_teams %>%
   anti_join(current_teams)
 
 write_json(dead_teams, "frc_deadteams.json")
+
+
+all_matches <- fromJSON("event_matches.json")
