@@ -59,9 +59,9 @@ markdown_list <- function(...) {
 }
 
 # get the API KEY here: https://developers.google.com/custom-search/v1/overview
-API_KEY <- "AIzaSyB7yJzl6VyEMI8x3SVtu58v4zPHIURnPhQ"
+API_KEY <- API_KEY
 # get your Search Engine ID on your CSE control panel
-SEARCH_ENGINE_ID <- "03401a2389a244bd0"
+SEARCH_ENGINE_ID <- SEARCH_ENGINE_ID
 
 
 deaths_list <- ap_officer_master %>%
