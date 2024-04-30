@@ -1,0 +1,295 @@
+---
+title: "-99- Officer Case Searches"
+author: "Khushboo Rathore"
+date: "`r Sys.Date()`"
+format:
+  html:
+    echo: false
+
+---
+
+```{r}
+#| label: load_libraries_settings_functions_data
+#| include: false
+
+
+###
+# Load libraries
+###
+library(here)
+source(here("analysis/functions/load_libraries_functions.R"))
+
+
+###
+# Load style functions
+###
+source(here("analysis/functions/style_functions.R"))
+
+
+###
+# Load data
+###
+source(here("analysis/functions/load_data_functions.R"))
+
+library(httr)
+library(tibble)
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE)
+
+# New approach
+# Strict to permissive
+## start with "o_first o_last" AND "d_first d_last" AND "full department name" AND "state" 
+### if return zero, then just "o_first o_last" and "d_first d_last" 
+### 
+
+# state
+# agency
+# death
+# officer last
+
+# Add in accordion and also add a message that says "x query was also attempted"
+# Run with 100 and 200
+
+
+markdown_list <- function(...) {
+  cat(paste0("", c(...), collapse = "\n"))
+}
+
+# get the API KEY here: https://developers.google.com/custom-search/v1/overview
+API_KEY <- API_KEY
+# get your Search Engine ID on your CSE control panel
+SEARCH_ENGINE_ID <- SEARCH_ENGINE_ID
+
+
+deaths_list <- ap_officer_master %>%
+  left_join(ap_case_complete_u_urls) %>% 
+  filter(!(is.na(o_last_name) | str_detect(o_first_name, "redacted"))) %>% 
+  slice(1:ceiling(nrow(.)/2))
+
+list_of_officers <- 1:nrow(deaths_list)
+#death_number <- 1588
+
+google_search_page <- function(death_number) {
+  
+  temp <- deaths_list %>%
+    slice(death_number) %>%
+    mutate(across(everything(), str_to_title))  %>%
+    mutate(across(everything(), ~str_replace_all(.," ","%20")))
+  
+  d_state_of_death <- temp$d_state_of_death
+  d_last_name <- temp$d_last_name
+  d_first_name <- temp$d_first_name
+  o_last_name <- temp$o_last_name
+  o_first_name <- temp$o_first_name
+  o_agency_name <- temp$o_agency_name
+  death_url <- temp$death_url
+  
+  query_string <- paste0("%22", d_first_name, "%20", d_last_name,"%22%20AND%20%22", o_first_name,"%20", o_last_name, "%22%20AND%20%22", o_agency_name, "%22%20AND%20%22", d_state_of_death, "%22")
+  qs1 <- query_string
+  
+  #%22 is a quote
+  #%20 is a space
+  #query_string <- paste0(d_first_name, "%20", d_last_name,"%20AND%20", o_first_name,"%20", o_last_name, "%20AND%20", dept, "%20AND%20", d_state_of_death)
+  #query_string <- "Gregory+Rachel+AND+Jerald+Ripple+AND+Mobile+AND+Alabama"
+  #query_string <- "%22Demetrio%20Jackson%22%20%22Gracia%20Larson%22"
+  #query_string <- "%22Gregory%20Rachel%22%20%22Gerald%20Ripple%22"
+  #query_string <- paste0("%22",d_first_name, "%20", d_last_name,"%22%20%22", o_first_name,"%20", o_last_name, "%22")
+  #query_string <- "%22Gregory%20Rachel%22%20%22Ripple%22"
+  page <- 1
+  # constructing the URL
+  # doc: https://developers.google.com/custom-search/v1/using_rest
+  # calculating start, (page=2) => (start=11), (page=3) => (start=21)
+  start <- (page - 1) * 10 + 1
+  url <- paste0("https://www.googleapis.com/customsearch/v1?key=", API_KEY, "&cx=", SEARCH_ENGINE_ID, "&q=", query_string, "&start=", start)
+  
+  response <- GET(url)
+  Sys.sleep(1)
+  
+  data <- content(response, "parsed")
+  
+  # create empty vectors to store the results
+  titles <- character()
+  descriptions <- character()
+  long_descriptions <- character()
+  urls <- character()
+  
+  # get the result items
+  alt_search <- FALSE
+  if(length(data$items) == 0) {
+    alt_search <- TRUE
+    query_string <- paste0("%22",d_first_name, "%20", d_last_name,"%22%20%22", o_first_name,"%20", o_last_name, "%22")
+    page <- 1
+    # constructing the URL
+    # doc: https://developers.google.com/custom-search/v1/using_rest
+    # calculating start, (page=2) => (start=11), (page=3) => (start=21)
+    start <- (page - 1) * 10 + 1
+    url <- paste0("https://www.googleapis.com/customsearch/v1?key=", API_KEY, "&cx=", SEARCH_ENGINE_ID, "&q=", query_string, "&start=", start)
+    
+    response <- GET(url)
+    Sys.sleep(1)
+    data <- content(response, "parsed")
+    
+    if(length(data$items) == 0) {
+      # print("This search using the Google API yielded no results.")
+      qs2 <- query_string
+      death_info <- gsub("%20", " ", paste(d_state_of_death, "|",  d_first_name, d_last_name, "|", o_agency_name, "|", o_first_name, o_last_name))
+      death_output <- c(
+      paste0("### OFFICER | <a href='", 
+           temp$death_url,
+           "' target='_blank'>",death_info,
+           "</a>"),
+    paste0("\n\n<br>"),
+    paste0("This search was attempted using the following queries: ", gsub("%22", "''", gsub("%20", " ", qs1))," and ", gsub("%22", "''", gsub("%20", " ", qs2)), " and returned no results. Manual google searching may yield additional information."),
+    paste0("\n\n<br>")
+    )
+      death_separate <- c(
+      paste0("<hr><hr>"),
+      paste0("\n\n")
+    )
+    
+    # Append to write out object
+    
+    search_list <- unlist(c(
+      data$queries$request[[1]][2], data$searchInformation$searchTime[1], data$searchInformation$totalResults[1]
+    ))
+    
+    death_output <- cat(death_output,search_list)
+    death_output <- cat(death_output,death_separate)
+
+    # Update to turn to markdown list
+    death_output <- markdown_list(death_output)
+      
+    return(death_output)
+    }
+
+  }
+    search_items <- data$items
+    #i <- 5
+    # iterate over the search results
+    for (i in 1:length(search_items)) {
+      search_item <- search_items[[i]]
+    
+    # check if long description exists
+      if ("pagemap" %in% names(search_item) &&
+          "metatags" %in% names(search_item$pagemap) &&
+          length(search_item$pagemap$metatags) > 0 &&
+          "og:description" %in% names(search_item$pagemap$metatags[[1]])) {
+        long_description <- search_item$pagemap$metatags[[1]]$`og:description`
+      } else {
+        long_description <- "N/A"
+      }
+    
+      # get the page title
+      title <- search_item$title
+      # page snippet
+      snippet <- search_item$snippet
+      # extract the page url
+      link <- search_item$link
+      
+      # store the results in respective vectors
+      titles <- c(titles, title)
+      descriptions <- c(descriptions, snippet)
+      long_descriptions <- c(long_descriptions, long_description)
+      urls <- c(urls, link)
+      
+    }
+    
+    results_df <- tibble(
+    title = titles,
+    description = descriptions,
+    long_description = long_descriptions,
+    url = urls
+    )
+  
+  # print the dataframe
+  # print(results_df)
+  
+  links_df <- results_df %>% 
+    mutate(hyperlink = paste0("<a href='", url, "' target='_blank'>", title, "</a>")) %>% 
+    mutate(death_info = gsub("%20", " ", paste(d_state_of_death, "|",  d_first_name, d_last_name, "|", o_agency_name, "|", o_first_name, o_last_name)))
+  
+  if(alt_search) {
+  death_output <- c(
+     paste0("### OFFICER | <a href='", 
+           temp$death_url[1],
+           "' target='_blank'>",links_df$death_info[1],
+           "</a>"),
+    paste0("\n\n<br>"),
+    paste0("This search was completed using the following query: ", gsub("%22", "''", gsub("%20", " ", query_string)), ", and may not reflect all available results. A search using the query: ", gsub("%22", "''", gsub("%20", " ", qs1))," yielded no results. Manual google searching may yield additional information."),
+    paste0("\n\n<br>")
+    )
+  } else {
+    death_output <- c(
+     paste0("### OFFICER | <a href='", 
+           temp$death_url[1],
+           "' target='_blank'>",links_df$death_info[1],
+           "</a>"),
+    paste0("\n\n<br>"),
+    paste0("This search was completed using the following query: ", gsub("%22", "''", gsub("%20", " ", query_string)), ", and may not reflect all available results. Manual google searching may yield additional information."),
+    paste0("\n\n<br>")
+    )
+  }
+  for (row_number in 1:nrow(links_df)) {
+        
+      # Deal with one search result ata time
+       one_case <- links_df %>%
+        slice(row_number)
+       
+       # Create output
+       search_output <- c(
+        paste0("**Search Result ", row_number,":** ",one_case$hyperlink,"<br>"),
+        paste0("**Search URL ", row_number,":** ",one_case$url,"<br>"),
+        paste0("**Result Desription ", row_number,":** ",one_case$description,"<br>"),
+        paste0("\n\n"))
+       
+       # Append video output to death output
+       death_output <- cat(death_output,search_output)
+       
+    }
+    
+    # After loop is over, create pagebreak
+    death_separate <- c(
+      paste0("<hr><hr>"),
+      paste0("\n\n")
+    )
+    
+    # Append to write out object
+    
+    
+    search_list <- unlist(c(
+      data$queries$request[[1]][3], data$searchInformation$searchTime[1], data$searchInformation$totalResults[1]
+    ))
+    
+    death_output <- cat(death_output,search_list)
+    death_output <- cat(death_output,death_separate)
+    
+    # Update to turn to markdown list
+    death_output <- markdown_list(death_output)
+    
+}
+
+
+
+```
+# Summary
+
+This analysis looks at the officers who have been charged from both AP and Howard Center harvesters. 
+
+-   **Generated on**: 2023-06-28
+-   **Generated by**: Khushboo Rathore
+-   **Reviewed by**: 
+-   **Last updated**: `r Sys.Date()`
+-   **Analysis done for**: 
+-   **Original AP reporter prompt:**
+
+## Search Results
+
+```{r results="asis"}
+#| echo: false
+walk(list_of_officers,google_search_page)
+```
+
+ 
