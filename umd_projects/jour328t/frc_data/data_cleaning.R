@@ -8,21 +8,22 @@ library(dplyr)
 column_names <- c("team_key", "alliance_color", "comp_level", "event_key", "key", "winning_alliance", "blue_score", "red_scoare")
 data_by_team <- data.frame(matrix(ncol = length(column_names), nrow = 0))
 
-matchdata = 1
-expand_df = function(matchdata) {
+#matchdata <- 2
+expand_df <- function(matchdata) {
   match_info <- matches_clean[matchdata, ]
-  red_teams <- unlist(match_info$alliances.red.team_keys)
-  blue_teams <- unlist(match_info$alliances.blue.team_keys)
+  red_teams <- str_split(match_info$alliances.red.team_keys[[1]], " ")
+  blue_teams <- str_split(match_info$alliances.blue.team_keys[[1]], " ")
   all_teams <- c(red_teams, blue_teams)
-  length(all_teams)
-  print(all_teams)
   if (length(all_teams) == 4) {
     colors <- c("red", "red", "blue", "blue")
   } else if (length(all_teams) == 6) {
     colors <- c("red", "red", "red", "blue", "blue", "blue")
   }
-  for (n in 1:nrow(all_teams)) {
-    data <- c(all_teams[n], colors[n], alliancematchdata['comp_level'], matchdata['event_key'], matchdata['key'], matchdata['winning_alliance'], matchdata['alliances.blue.score'], matchdata['alliances.red.score'])
+  for (n in 1:length(all_teams)) {
+    team_key <- all_teams[n]
+    alliance_color <- colors[n]
+    data <- data.frame(c(team_key = team_key, alliance_color = alliance_color, match_info['comp_level'], match_info['event_key'], match_info['key'], match_info['winning_alliance'], match_info['alliances.blue.score'], match_info['alliances.red.score'])) %>% 
+      rename(blue_score = alliances.blue.score, red_score = alliances.red.score)
     data_by_team <- rbind(data_by_team, data)
   }
   
@@ -43,5 +44,14 @@ matches_clean <- all_matches %>%
   flatten() %>% 
   select(comp_level, event_key, key, winning_alliance, alliances.blue.score, alliances.blue.team_keys, alliances.red.score, alliances.red.team_keys)
 
-team_scores <- lapply(1:nrow(matches_clean), expand_df)
+matches_subset <- matches_clean %>% 
+  head(10)
+
+for (y in 1:nrow(matches_subset)) {
+  print(y)
+  expand_df(y)
+}
+
+
+
 
