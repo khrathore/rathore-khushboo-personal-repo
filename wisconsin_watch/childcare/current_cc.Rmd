@@ -1,0 +1,42 @@
+---
+title: "Childcare Analysis"
+author: "Khushboo Rathore"
+date: "2024-07-03"
+output: html_document
+---
+
+## Load libraries and establish settings
+
+```{r}
+# Turn off scientific notation
+options(scipen=999)
+
+# Load the tidyverse.
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(janitor)
+```
+
+## Read facilities
+
+```{r}
+directory_current <- read_csv("LCC Directory.csv")
+
+directory_clean <- directory_current %>% 
+  clean_names() %>% 
+  group_by(county) %>% 
+  count()
+
+directory_17 <- read_csv("LCC Directory 17.csv")
+
+directory_17_clean <- directory_17 %>% 
+  clean_names() %>% 
+  group_by(county) %>% 
+  count() %>% 
+  rename(n_17 = n)
+
+directory_dif <- directory_clean %>% 
+  left_join(directory_17_clean) %>% 
+  mutate(percent_dif = (n_17-n)/n*100)
+```
