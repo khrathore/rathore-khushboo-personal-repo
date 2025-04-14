@@ -62,3 +62,14 @@ directory_dif <- directory_17_clean %>%
 
 write_csv(directory_dif, "year_difs.csv")
 ```
+
+
+```{r}
+directory_17_searches <- directory_17 %>% 
+  clean_names() %>% 
+  mutate(provider_number = str_remove(provider_number, "^0+"),
+         location_number = str_remove(location_number, "^0+")) %>% 
+  mutate(search_link = paste0("https://childcarefinder.wisconsin.gov/ProviderDetails?ProviderNumber=", provider_number, "&LocationNumber=", location_number))
+
+write_csv(directory_17_searches, "current_searching.csv")
+```

@@ -1,0 +1,16 @@
+```{r}
+setwd("~/Documents/GitHub/rathore-khushboo-personal-repo/wisconsin_watch")
+
+# Load the tidyverse.
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(janitor)
+```
+
+
+```{r}
+parole_hearings <- read_csv("parole_events.csv")
+```
+
+
